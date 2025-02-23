@@ -19,5 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Spawn-Android"
+rootProject.name = "Spawn-App-Android"
 include(":app")
+ 

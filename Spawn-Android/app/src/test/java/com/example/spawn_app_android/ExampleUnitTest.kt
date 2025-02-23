@@ -1,4 +1,4 @@
-package com.example.spawn_android
+package com.example.spawn_app_android
 
 import org.junit.Test
 
