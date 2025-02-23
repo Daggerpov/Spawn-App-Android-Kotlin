@@ -57,3 +57,5 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+/app/src/build
