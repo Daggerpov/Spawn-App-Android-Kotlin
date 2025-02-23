@@ -1,4 +1,4 @@
-package com.example.spawn_android.ui.theme
+package com.example.spawn_app_android.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
