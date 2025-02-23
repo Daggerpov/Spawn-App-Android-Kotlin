@@ -59,6 +59,3 @@ bin/
 .DS_Store
 
 /app/src/build
-
-/idea/shelf/
-/idea/workspace.xml
