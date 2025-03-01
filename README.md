@@ -1,10 +1,20 @@
 # Spawn-App-Android-Kotlin
  Spawn for Android, made in Kotlin, and connected to Spawn-App-Back-End (REST API). 
 
- See the Figma Design [here](https://www.figma.com/design/ewushMunvsBWWpKbKnWsIH/Spawn?node-id=446-291&p=f&t=imN49KCl0sehkyG4-0)
+### Table  of Contents:
+- [Onboarding](#onboarding)
+- [Current App State](#currentappstate)
+- [Entity Relationship Diagram](#entityrelationshipdiagram)
+- [General Links](#generallinks)
 
+# General Links
+- [Back-end Repo](https://github.com/Daggerpov/Spawn-App-Back-End)
+- [Jetpack Compose MVVM playlist](https://youtube.com/playlist?list=PLzZEuVaFb9Exi-pc8qtHBrrLg8bUn-TP6&si=DQWrtxvFNACAxyBk)
+- [Kotlin Fundamentals](https://developer.android.com/courses/pathways/android-basics-compose-unit-2-pathway-1#codelab-https://developer.android.com/codelabs/basic-android-kotlin-compose-classes-and-objects)
+
+# Current App State
 ![image](https://github.com/user-attachments/assets/7c4a76b6-1ca7-466b-84be-8857fa3d196a)
 
-## Entity Relationship Diagram
+# Entity Relationship Diagram
 
 ![image](https://github.com/user-attachments/assets/5ebf81fb-210a-41e3-96a6-fc4d4123fd06)
