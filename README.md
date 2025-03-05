@@ -2,9 +2,11 @@
  Spawn for Android, made in Kotlin, and connected to Spawn-App-Back-End (REST API). 
 
 ### Table  of Contents:
+- [General Links](#general-links)
 - [Current App State](#current-app-state)
 - [Entity Relationship Diagram](#entity-relationship-diagram)
-- [General Links](#general-links)
+- [API Calls](#api-calls)
+
 
 # General Links
 - [Back-end Repo](https://github.com/Daggerpov/Spawn-App-Back-End)
@@ -17,3 +19,10 @@
 # Entity Relationship Diagram
 
 ![image](https://github.com/user-attachments/assets/5ebf81fb-210a-41e3-96a6-fc4d4123fd06)
+
+# API Calls
+
+These are taken from the [iOS repo](https://github.com/Daggerpov/Spawn-App-iOS-SwiftUI), and will be the ones necessary for this Android project as well. 
+
+
+
