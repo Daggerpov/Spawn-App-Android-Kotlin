@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.draw.clip
+import com.example.spawn_app_android.ui.screens.MapPage
 
 
 class MainActivity : ComponentActivity() {
@@ -42,15 +43,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            SpawnAppAndroidTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Column {
-                        HelloCard("Daniel Lee", modifier = Modifier.padding(innerPadding))
-                        FriendFilterReel(filters = arrayOf("Everyone", "Close Friends", "Sports", "Hobbies", "Studying"))
-                        EventsReel(events = listOf("Dinner time!!!!!", "Basketball run", "Painting sesh!", "Light 5k run", "Painting sesh!"))
-                    }
-                }
-            }
+//            SpawnAppAndroidTheme {
+//                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+//                    Column {
+//                        HelloCard("Daniel Lee", modifier = Modifier.padding(innerPadding))
+//                        FriendFilterReel(filters = arrayOf("Everyone", "Close Friends", "Sports", "Hobbies", "Studying"))
+//                        EventsReel(events = listOf("Dinner time!!!!!", "Basketball run", "Painting sesh!", "Light 5k run", "Painting sesh!"))
+//                    }
+//                }
+//            }
+            MapPage()
         }
     }
 }
@@ -93,7 +95,7 @@ fun HelloCard(name: String, modifier: Modifier = Modifier) {
             modifier = Modifier // Use a new Modifier instance here
                 .size(72.dp)
                 .clip(CircleShape)
-                .align(Alignment.CenterVertically)
+
         )
     }
 }
@@ -187,11 +189,12 @@ fun EventsReel(events: List<String>, modifier: Modifier = Modifier) {
     name = "Dashboard")
 @Composable
 fun Preview() {
-    SpawnAppAndroidTheme {
-        Column {
-            HelloCard("Daniel Lee")
-            FriendFilterReel(filters = arrayOf("Everyone", "Close Friends", "Sports"))
-            EventsReel(events = listOf("Dinner time!!!!!", "Basketball run", "Painting sesh!", "Light 5k run", "Painting sesh!") )
-        }
-    }
+//    SpawnAppAndroidTheme {
+//        Column {
+//            HelloCard("Daniel Lee")
+//            FriendFilterReel(filters = arrayOf("Everyone", "Close Friends", "Sports"))
+//            EventsReel(events = listOf("Dinner time!!!!!", "Basketball run", "Painting sesh!", "Light 5k run", "Painting sesh!") )
+//        }
+//    }
+    MapPage()
 }
