@@ -27,6 +27,9 @@ fun BottomNavigation(
 ) {
     NavigationBar(
         modifier = Modifier.fillMaxWidth(),
+        containerColor = Color.Transparent,
+        contentColor = Color.Transparent,
+        tonalElevation = 0.dp
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
