@@ -36,6 +36,8 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.draw.clip
 import com.example.spawn_app_android.ui.screens.EventDashboard
+import com.example.spawn_app_android.ui.screens.MapPage
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
