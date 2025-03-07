@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.draw.clip
+import com.example.spawn_app_android.ui.screens.MapPage
 
 
 class MainActivity : ComponentActivity() {
@@ -93,7 +94,7 @@ fun HelloCard(name: String, modifier: Modifier = Modifier) {
             modifier = Modifier // Use a new Modifier instance here
                 .size(72.dp)
                 .clip(CircleShape)
-                .align(Alignment.CenterVertically)
+
         )
     }
 }
