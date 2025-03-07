@@ -43,16 +43,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-//            SpawnAppAndroidTheme {
-//                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-//                    Column {
-//                        HelloCard("Daniel Lee", modifier = Modifier.padding(innerPadding))
-//                        FriendFilterReel(filters = arrayOf("Everyone", "Close Friends", "Sports", "Hobbies", "Studying"))
-//                        EventsReel(events = listOf("Dinner time!!!!!", "Basketball run", "Painting sesh!", "Light 5k run", "Painting sesh!"))
-//                    }
-//                }
-//            }
-            MapPage()
+            SpawnAppAndroidTheme {
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    Column {
+                        HelloCard("Daniel Lee", modifier = Modifier.padding(innerPadding))
+                        FriendFilterReel(filters = arrayOf("Everyone", "Close Friends", "Sports", "Hobbies", "Studying"))
+                        EventsReel(events = listOf("Dinner time!!!!!", "Basketball run", "Painting sesh!", "Light 5k run", "Painting sesh!"))
+                    }
+                }
+            }
         }
     }
 }
@@ -189,12 +188,11 @@ fun EventsReel(events: List<String>, modifier: Modifier = Modifier) {
     name = "Dashboard")
 @Composable
 fun Preview() {
-//    SpawnAppAndroidTheme {
-//        Column {
-//            HelloCard("Daniel Lee")
-//            FriendFilterReel(filters = arrayOf("Everyone", "Close Friends", "Sports"))
-//            EventsReel(events = listOf("Dinner time!!!!!", "Basketball run", "Painting sesh!", "Light 5k run", "Painting sesh!") )
-//        }
-//    }
-    MapPage()
+    SpawnAppAndroidTheme {
+        Column {
+            HelloCard("Daniel Lee")
+            FriendFilterReel(filters = arrayOf("Everyone", "Close Friends", "Sports"))
+            EventsReel(events = listOf("Dinner time!!!!!", "Basketball run", "Painting sesh!", "Light 5k run", "Painting sesh!") )
+        }
+    }
 }
