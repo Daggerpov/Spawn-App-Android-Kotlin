@@ -35,25 +35,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.draw.clip
-import com.example.spawn_app_android.ui.screens.EventDashboard
-import com.example.spawn_app_android.ui.screens.MapPage
+import com.example.spawn_app_android.ui.screens.EventsPage
 
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            SpawnAppAndroidTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Column {
-                        val eventDashboard = EventDashboard()
-                        eventDashboard.HelloCard("Daniel Lee", modifier = Modifier.padding(innerPadding))
-                        eventDashboard.FriendFilterReel(filters = arrayOf("Everyone", "Close Friends", "Sports", "Hobbies", "Studying"))
-                        eventDashboard.EventsReel(events = listOf("Dinner time!!!!!", "Basketball run", "Painting sesh!", "Light 5k run", "Painting sesh!"))
-                    }
-                }
-            }
+            EventsPage()
         }
     }
 }
@@ -63,12 +54,5 @@ class MainActivity : ComponentActivity() {
     name = "Dashboard")
 @Composable
 fun Preview() {
-    SpawnAppAndroidTheme {
-        Column {
-            val eventDashboard = EventDashboard()
-            eventDashboard.HelloCard("Daniel Lee")
-            eventDashboard.FriendFilterReel(filters = arrayOf("Everyone", "Close Friends", "Sports"))
-            eventDashboard.EventsReel(events = listOf("Dinner time!!!!!", "Basketball run", "Painting sesh!", "Light 5k run", "Painting sesh!") )
-        }
-    }
+    EventsPage()
 }
