@@ -12,7 +12,7 @@
 - [Kotlin Fundamentals](https://developer.android.com/courses/pathways/android-basics-compose-unit-2-pathway-1#codelab-https://developer.android.com/codelabs/basic-android-kotlin-compose-classes-and-objects)
 
 # Current App State
-![image](https://github.com/user-attachments/assets/7c4a76b6-1ca7-466b-84be-8857fa3d196a)
+![image](https://github.com/user-attachments/assets/64bb9b87-08a2-4cdb-8823-fd2985636e1a)
 
 # Entity Relationship Diagram
 
