@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -30,57 +32,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.spawn_app_android.R
+import com.example.spawn_app_android.ui.navigation.EventMapToggle
 import com.example.spawn_app_android.ui.theme.SpawnAppAndroidTheme
 import com.mapbox.geojson.Point
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 
 
-class MapActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            SpawnAppAndroidTheme {
-                Column {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize() // ensure map is max size
-                            .background(
-                                color = Color(0xFFE7E7DD)
-                            )
-
-                    ) {
-                        MapContainer()
-                        Column(
-                            modifier = Modifier
-                                .fillMaxHeight(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            //verticalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            VerticalSpacer(40)
-                            MapToggle(true, 40)
-                            VerticalSpacer(30)
-                            FriendFilterReel(
-                                filters = arrayOf(
-                                    "everyone",
-                                    "close friends",
-                                    "sports"
-                                )
-                            )
-                            VerticalSpacer(570)
-                            FriendButton()
-                        }
-
-                    } // Box
-                }// Column
-            }
-        }
-    }
-}
-
 @Composable
-fun MapPage() {
+fun MapPage(
+    onNavigateToEventsPage: () -> Unit
+) {
     SpawnAppAndroidTheme {
         Column {
             Box(
@@ -99,7 +61,9 @@ fun MapPage() {
                     //verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     VerticalSpacer(40)
-                    MapToggle(true, 40)
+
+                    EventMapToggle(true, 40, onNavigateToEventsPage)
+
                     VerticalSpacer(30)
                     FriendFilterReel(filters = arrayOf("everyone", "close friends", "sports"))
                     VerticalSpacer(570)
@@ -132,124 +96,6 @@ fun MapContainer() {
     }
 
 }
-
-// TODO: could be made more abstract, lots of reused code
-@Composable
-fun MapToggle(mapState: Boolean, height: Int) {
-
-    var state = mapState;
-
-    Text("$state")
-
-    Box(
-        modifier = Modifier
-            .width(110.dp)
-            .height(height.dp)
-            .background(
-                color = Color(0xFF163030),
-                shape = RoundedCornerShape(100)
-            )
-            .border(
-                width = 4.dp,
-                color = Color(0xFF1D3D3D),
-                shape = RoundedCornerShape(100)
-            )
-            .clickable(
-                
-            ) { state = !state }
-    ) {
-        // check toggle state
-        if (state) {
-            // map state -> globe is highlighted
-            Row {
-                Box(
-                    modifier = Modifier
-                        .width(55.dp)
-                        .padding(4.dp)
-                        .height((height - 4).dp)
-
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.list_icon),
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(Color(0xFFE7E7DD)),
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .width(30.dp)
-                            .height(30.dp)
-
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .width(55.dp)
-                        .padding(4.dp)
-                        .height((height - 4).dp)
-                        .background(
-                            color = Color(0xFFE7E7DD),
-                            shape = RoundedCornerShape(100)
-                        )
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.globe_icon),
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(Color(0xFF163030)),
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .width(30.dp)
-                            .height(30.dp)
-
-                    )
-                }
-            }
-        } else {
-            // list state -> list highlighted
-            Row {
-                Box(
-                    modifier = Modifier
-                        .width(55.dp)
-                        .padding(4.dp)
-                        .height((height - 4).dp)
-                        .background(
-                            color = Color(0xFFE7E7DD),
-                            shape = RoundedCornerShape(100)
-                        )
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.list_icon),
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(Color(0xFF163030)),
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .width(30.dp)
-                            .height(30.dp)
-
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .width(55.dp)
-                        .padding(4.dp)
-                        .height((height - 4).dp)
-
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.globe_icon),
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(Color(0xFFE7E7DD)),
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .width(30.dp)
-                            .height(30.dp)
-
-                    )
-                }
-            }
-        }
-
-    }
-
-} // MapToggle
 
 @Composable
 fun FriendButton() {
@@ -292,5 +138,5 @@ fun VerticalSpacer(height: Int) {
     name = "Map")
 @Composable
 fun Preview() {
-    MapPage()
+    //MapPage()
 }

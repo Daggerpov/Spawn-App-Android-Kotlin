@@ -1,5 +1,6 @@
 package com.example.spawn_app_android.ui.screens
 
+import android.graphics.pdf.PdfDocument.Page
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -14,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.ui.theme.SpawnAppAndroidTheme
 import com.example.spawn_app_android.ui.navigation.BottomNavigation
@@ -152,21 +155,23 @@ fun EventsReel(events: List<String>, modifier: Modifier = Modifier) {
 
 
 @Composable
-fun EventsPage() {
+fun EventsPage(
+    onNavigateToMapPage: () -> Unit
+) {
     SpawnAppAndroidTheme {
         Box(// Screen Box
             modifier = Modifier
                 .fillMaxWidth()
         ) {
             Column {
+                VerticalSpacer(40)
                 Box(// Map Toggle
                     modifier = Modifier
-                        .padding(16.dp)
                         .align(Alignment.CenterHorizontally)
-                ) {
-                    EventMapToggle(false, 40)
-                }
 
+                ) {
+                    EventMapToggle(false, 40, onNavigateToMapPage)
+                }
                 HelloCard("Daniel Lee")
                 FriendFilterReel(filters = arrayOf("Everyone", "Close Friends", "Sports"))
                 EventsReel(
@@ -201,5 +206,5 @@ fun EventsPage() {
     name = "Dashboard")
 @Composable
 fun PreviewEventPage() {
-    EventsPage()
+    //EventsPage()
 }

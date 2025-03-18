@@ -25,7 +25,7 @@ import com.example.spawn_app_android.ui.theme.SpawnAppAndroidTheme
 
 // TODO: could be made more abstract, lots of reused code
 @Composable
-fun EventMapToggle(mapState: Boolean, height: Int) {
+fun EventMapToggle(mapState: Boolean, height: Int, onNavigatePage: () -> Unit) {
 
     var state = mapState;
 
@@ -43,8 +43,8 @@ fun EventMapToggle(mapState: Boolean, height: Int) {
                 shape = RoundedCornerShape(100)
             )
             .clickable(
-
-            ) { state = !state }
+                onClick = onNavigatePage
+            )
     ) {
         // check toggle state
         if (state) {
@@ -143,6 +143,6 @@ fun EventMapToggle(mapState: Boolean, height: Int) {
 @Composable
 fun EventMapTogglePreview() {
     SpawnAppAndroidTheme {
-        EventMapToggle(false, 40)
+        //EventMapToggle(false, 40)
     }
 }
