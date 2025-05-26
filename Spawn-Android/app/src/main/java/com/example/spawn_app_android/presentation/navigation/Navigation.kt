@@ -1,38 +1,17 @@
+package com.example.spawn_app_android.presentation.navigation
+
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.Navigation
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.example.spawn_app_android.R
-import com.example.spawn_app_android.ui.navigation.BottomNavigation
-import com.example.spawn_app_android.ui.screens.EventsPage
-import com.example.spawn_app_android.ui.screens.MapPage
-import com.example.spawn_app_android.ui.theme.SpawnAppAndroidTheme
+import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
 import kotlinx.serialization.Serializable
 
-//@Serializable
-//object EventsPage
-//@Serializable
-//object MapPage
-//
-//@Composable
-//fun Navigation() {
-//
-//    val navController = rememberNavController()
-//
-//
-//
-//    NavHost(navController = navController, startDestination = "EventsPage") {
-//        composable<EventsPage> { EventsPage }
-//        composable<MapPage> { MapPage }
-//    }
-//
-//}
+
 @Serializable
 data class Profile(val name: String)
 

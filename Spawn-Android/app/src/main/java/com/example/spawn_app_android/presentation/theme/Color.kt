@@ -1,4 +1,4 @@
-package com.example.spawn_app_android.ui.theme
+package com.example.spawn_app_android.presentation.theme
 import androidx.compose.ui.graphics.Color
 
 val Purple80 = Color(0xFFD0BCFF)
