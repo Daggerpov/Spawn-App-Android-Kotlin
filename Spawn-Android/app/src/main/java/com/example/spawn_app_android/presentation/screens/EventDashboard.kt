@@ -1,6 +1,5 @@
-package com.example.spawn_app_android.ui.screens
+package com.example.spawn_app_android.presentation.screens
 
-import android.graphics.pdf.PdfDocument.Page
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -15,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,11 +28,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import com.example.spawn_app_android.R
-import com.example.spawn_app_android.ui.theme.SpawnAppAndroidTheme
-import com.example.spawn_app_android.ui.navigation.BottomNavigation
-import com.example.spawn_app_android.ui.navigation.EventMapToggle
+import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
+import com.example.spawn_app_android.presentation.navigation.BottomNavigation
+import com.example.spawn_app_android.presentation.navigation.EventMapToggle
 
 
 @Composable

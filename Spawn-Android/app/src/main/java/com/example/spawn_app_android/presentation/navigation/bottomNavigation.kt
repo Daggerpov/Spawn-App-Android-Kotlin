@@ -1,9 +1,8 @@
-package com.example.spawn_app_android.ui.navigation
+package com.example.spawn_app_android.presentation.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material3.NavigationBar
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,7 +18,7 @@ import com.example.spawn_app_android.R
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.spawn_app_android.ui.theme.SpawnAppAndroidTheme
+import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
 
 
 @Composable

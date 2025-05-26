@@ -1,8 +1,6 @@
-package com.example.spawn_app_android.ui.theme
+package com.example.spawn_app_android.presentation.theme
 
-import android.app.Activity
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
