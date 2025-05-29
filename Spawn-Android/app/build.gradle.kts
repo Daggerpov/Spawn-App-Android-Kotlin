@@ -42,7 +42,7 @@ android {
 }
 
 dependencies {
-    val navVersion = "2.8.9";
+    val navVersion = "2.8.9"
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -80,5 +80,11 @@ dependencies {
 
     // JSON serialization library, works with the Kotlin serialization plugin
     implementation(libs.kotlinx.serialization.json)
+
+    // retrofit
+    implementation ("com.squareup.retrofit2:retrofit:2.11.0")
+
+    // GSON
+    implementation ("com.squareup.retrofit2:converter-gson:2.11.0")
 
 }
