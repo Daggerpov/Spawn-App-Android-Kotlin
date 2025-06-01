@@ -42,7 +42,6 @@ android {
 }
 
 dependencies {
-    val navVersion = "2.8.9"
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -65,8 +64,6 @@ dependencies {
     implementation("com.mapbox.extension:maps-compose:11.10.2")
 
     // navigation -> daniel z
-    implementation(libs.androidx.navigation.compose.v289)
-    implementation(libs.androidx.navigation.compose.v289)
 
     // Views/Fragments integration
     implementation(libs.androidx.navigation.fragment)
@@ -86,5 +83,8 @@ dependencies {
 
     // GSON
     implementation ("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation ("androidx.compose.ui:ui:1.8.2")
+    implementation ("androidx.compose.material3:material3:1.3.2")
+    implementation ("androidx.navigation:navigation-compose:2.9.0")
 
 }
