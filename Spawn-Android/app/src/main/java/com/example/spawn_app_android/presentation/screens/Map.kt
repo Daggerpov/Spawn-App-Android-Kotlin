@@ -28,9 +28,7 @@ import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportS
 
 
 @Composable
-fun MapPage(
-    onNavigateToEventsPage: () -> Unit
-) {
+fun MapPage() {
     SpawnAppAndroidTheme {
         Column {
             Box(
@@ -48,14 +46,6 @@ fun MapPage(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     //verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    VerticalSpacer(40)
-
-                    EventMapToggle(true, 40, onNavigateToEventsPage)
-
-                    VerticalSpacer(30)
-                    FriendFilterReel(filters = arrayOf("everyone", "close friends", "sports"))
-                    VerticalSpacer(570)
-                    FriendButton()
                 }
 
             } // Box
@@ -120,11 +110,11 @@ fun VerticalSpacer(height: Int) {
     Box(modifier = Modifier.height(height.dp))
 }
 
-// preview
-@Preview(showBackground = true,
-    showSystemUi = true,
-    name = "Map")
-@Composable
-fun Preview() {
-    //MapPage()
-}
+//// preview
+//@Preview(showBackground = true,
+//    showSystemUi = true,
+//    name = "Map")
+//@Composable
+//fun Preview() {
+//    MapPage()
+//}

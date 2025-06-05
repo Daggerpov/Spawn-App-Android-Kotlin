@@ -48,8 +48,8 @@ fun SpawnApp() {
             startDestination = BottomNavItem.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(BottomNavItem.Home.route) { HomeScreen() }
-            composable(BottomNavItem.Map.route) { MapScreen() }
+            composable(BottomNavItem.Home.route) { EventsPage() }
+            composable(BottomNavItem.Map.route) { MapPage() }
             composable(BottomNavItem.Activities.route) { ActivitesScreen() }
             composable(BottomNavItem.Friends.route) { FriendsScreen() }
             composable(BottomNavItem.Profile.route) { ProfileScreen() }
