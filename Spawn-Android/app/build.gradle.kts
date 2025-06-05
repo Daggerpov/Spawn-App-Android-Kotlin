@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+
+    kotlin("plugin.serialization") version "2.0.21"
 }
 
 android {
@@ -56,7 +58,33 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    // mapbox
+
+    // mapbox -> daniel z
     implementation("com.mapbox.maps:android:11.10.2")
     implementation("com.mapbox.extension:maps-compose:11.10.2")
+
+    // navigation -> daniel z
+
+    // Views/Fragments integration
+    implementation(libs.androidx.navigation.fragment)
+    implementation(libs.androidx.navigation.ui)
+
+    // Feature module support for Fragments
+    implementation(libs.androidx.navigation.dynamic.features.fragment)
+
+    // Testing Navigation
+    androidTestImplementation(libs.androidx.navigation.testing)
+
+    // JSON serialization library, works with the Kotlin serialization plugin
+    implementation(libs.kotlinx.serialization.json)
+
+    // retrofit
+    implementation ("com.squareup.retrofit2:retrofit:2.11.0")
+
+    // GSON
+    implementation ("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation ("androidx.compose.ui:ui:1.8.2")
+    implementation ("androidx.compose.material3:material3:1.3.2")
+    implementation ("androidx.navigation:navigation-compose:2.9.0")
+
 }

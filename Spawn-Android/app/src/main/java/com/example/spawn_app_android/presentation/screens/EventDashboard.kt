@@ -1,4 +1,4 @@
-package com.example.spawn_app_android.ui.screens
+package com.example.spawn_app_android.presentation.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -29,9 +29,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.spawn_app_android.R
-import com.example.spawn_app_android.ui.theme.SpawnAppAndroidTheme
-import com.example.spawn_app_android.ui.navigation.BottomNavigation
-import com.example.spawn_app_android.ui.navigation.EventMapToggle
+import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
+import com.example.spawn_app_android.presentation.navigation.BottomNavigation
+import com.example.spawn_app_android.presentation.navigation.EventMapToggle
 
 
 @Composable
@@ -152,21 +152,23 @@ fun EventsReel(events: List<String>, modifier: Modifier = Modifier) {
 
 
 @Composable
-fun EventsPage() {
+fun EventsPage(
+    onNavigateToMapPage: () -> Unit
+) {
     SpawnAppAndroidTheme {
         Box(// Screen Box
             modifier = Modifier
                 .fillMaxWidth()
         ) {
             Column {
+                VerticalSpacer(40)
                 Box(// Map Toggle
                     modifier = Modifier
-                        .padding(16.dp)
                         .align(Alignment.CenterHorizontally)
-                ) {
-                    EventMapToggle(false, 40)
-                }
 
+                ) {
+                    EventMapToggle(false, 40, onNavigateToMapPage)
+                }
                 HelloCard("Daniel Lee")
                 FriendFilterReel(filters = arrayOf("Everyone", "Close Friends", "Sports"))
                 EventsReel(
@@ -201,5 +203,5 @@ fun EventsPage() {
     name = "Dashboard")
 @Composable
 fun PreviewEventPage() {
-    EventsPage()
+    //EventsPage()
 }

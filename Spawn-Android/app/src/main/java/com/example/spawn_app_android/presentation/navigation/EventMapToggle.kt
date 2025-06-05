@@ -1,4 +1,4 @@
-package com.example.spawn_app_android.ui.navigation
+package com.example.spawn_app_android.presentation.navigation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -10,24 +10,22 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.spawn_app_android.R
-import com.example.spawn_app_android.ui.theme.SpawnAppAndroidTheme
+import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
 
 // TODO: could be made more abstract, lots of reused code
 @Composable
-fun EventMapToggle(mapState: Boolean, height: Int) {
+fun EventMapToggle(mapState: Boolean, height: Int, onNavigatePage: () -> Unit) {
 
-    var state = mapState;
+    var state = mapState
 
     Box(
         modifier = Modifier
@@ -43,8 +41,8 @@ fun EventMapToggle(mapState: Boolean, height: Int) {
                 shape = RoundedCornerShape(100)
             )
             .clickable(
-
-            ) { state = !state }
+                onClick = onNavigatePage
+            )
     ) {
         // check toggle state
         if (state) {
@@ -143,6 +141,6 @@ fun EventMapToggle(mapState: Boolean, height: Int) {
 @Composable
 fun EventMapTogglePreview() {
     SpawnAppAndroidTheme {
-        EventMapToggle(false, 40)
+        //EventMapToggle(false, 40)
     }
 }
