@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.spawn_app_android.presentation.navigation.FriendsList
 import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
 import com.mapbox.maps.extension.style.expressions.dsl.generated.all
 import com.mapbox.maps.extension.style.expressions.dsl.generated.mod
@@ -30,6 +31,10 @@ import com.mapbox.maps.extension.style.expressions.dsl.generated.mod
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FriendsPage() {
+
+    val friends = listOf("Daniel Lee", "Daniel Zhang", "Raphael Lee", "Jenson Huang")
+    val recents = listOf("Steve Jobs", "John Grey", "Lucas Gingera")
+
     SpawnAppAndroidTheme {
         Column(
             modifier = Modifier
@@ -39,7 +44,7 @@ fun FriendsPage() {
             FriendRequestTile(5)
             VerticalSpacer(60)
             //SearchBar() { }
-            FriendTile()
+            FriendsList(friends = friends)
 
         }
     }
@@ -76,7 +81,7 @@ fun FriendRequestTile(numRequests: Int) {
         ) {
             Text(
                 text = numRequests.toString(),
-                fontSize = 16.sp,
+                fontSize = 12.sp,
                 color = Color(255, 255, 255)
             )
         }
@@ -84,11 +89,22 @@ fun FriendRequestTile(numRequests: Int) {
 }
 
 @Composable
-fun FriendTile() {
+fun FriendsList (friends: List<String>) {
+
+    Column() {
+        for (friend in friends) {
+            FriendTile(friend)
+        }
+    }
+
+}
+
+@Composable
+fun FriendTile(name: String) {
     Row() {
         Text(
-            text = "Hi",
-            fontSize = 10.sp,
+            text = name,
+            fontSize = 14.sp,
             modifier = Modifier
                 .padding(horizontal = 4.dp, vertical = 2.dp) // Space between buttons
                 .background(
@@ -101,10 +117,10 @@ fun FriendTile() {
 }
 
 
-@Preview(showBackground = true,
-    showSystemUi = true,
-    name = "Friends")
-@Composable
-fun PreviewEventPage() {
-    FriendsPage()
-}
+//@Preview(showBackground = true,
+//    showSystemUi = true,
+//    name = "Friends")
+//@Composable
+//fun PreviewEventPage() {
+//    FriendsPage()
+//}
