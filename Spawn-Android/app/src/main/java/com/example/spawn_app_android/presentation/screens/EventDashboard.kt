@@ -151,9 +151,7 @@ fun EventsReel(events: List<String>, modifier: Modifier = Modifier) {
 
 
 @Composable
-fun EventsPage(
-    onNavigateToMapPage: () -> Unit
-) {
+fun EventsPage() {
     SpawnAppAndroidTheme {
         Box(// Screen Box
             modifier = Modifier
@@ -166,7 +164,6 @@ fun EventsPage(
                         .align(Alignment.CenterHorizontally)
 
                 ) {
-                    EventMapToggle(false, 40, onNavigateToMapPage)
                 }
                 HelloCard("Daniel Lee")
                 FriendFilterReel(filters = arrayOf("Everyone", "Close Friends", "Sports"))
@@ -197,10 +194,10 @@ fun EventsPage(
     }
 }
 
-@Preview(showBackground = true,
-    showSystemUi = false,
-    name = "Dashboard")
-@Composable
-fun PreviewEventPage() {
-    //EventsPage()
-}
+//@Preview(showBackground = true,
+//    showSystemUi = false,
+//    name = "Dashboard")
+//@Composable
+//fun PreviewEventPage() {
+//    EventsPage()
+//}
