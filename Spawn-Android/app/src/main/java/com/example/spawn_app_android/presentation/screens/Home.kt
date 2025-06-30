@@ -62,25 +62,6 @@ fun HomeScreenScrollable(viewModel: HomeViewModel = viewModel()) {
 }
 
 @Composable
-fun SimpleLazyColumn() {
-    LazyColumn(
-        modifier = Modifier.padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-
-    ) {
-        items(3) { index ->
-            Text(
-                text = "Item #$index",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                color = Color.Black
-            )
-        }
-    }
-}
-
-@Composable
 fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
     SetDarkStatusBarIcons()
 //    val activities by viewModel.filteredActivities.collectAsState()

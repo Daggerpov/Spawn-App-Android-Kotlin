@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Spawn-App-Android</string>
+    <string name="app_name">Spawn</string>
     <string name="hello">Hello,</string>
     <string name="spawn_in">Spawn in!</string>
 </resources>
