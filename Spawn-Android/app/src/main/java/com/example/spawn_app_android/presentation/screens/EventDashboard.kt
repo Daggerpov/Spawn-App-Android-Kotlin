@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
-import com.example.spawn_app_android.presentation.navigation.BottomNavigation
 import com.example.spawn_app_android.presentation.navigation.EventMapToggle
 
 
@@ -186,13 +185,13 @@ fun EventsPage(
                 modifier = Modifier
                 .align(Alignment.BottomCenter)
             ) {
-                BottomNavigation(firstIcon = R.drawable.add_event_button,
-                    secondIcon = R.drawable.friends_button,
-                    selected = 0,
-                    onFirstClick = {},
-                    onSecondClick = {},
-                    screenWidth = LocalConfiguration.current.screenWidthDp
-                )
+//                BottomNavigation(firstIcon = R.drawable.add_event_button,
+//                    secondIcon = R.drawable.friends_button,
+//                    selected = 0,
+//                    onFirstClick = {},
+//                    onSecondClick = {},
+//                    screenWidth = LocalConfiguration.current.screenWidthDp
+//                )
             }
         }
     }
