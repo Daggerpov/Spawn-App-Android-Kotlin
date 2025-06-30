@@ -30,6 +30,10 @@ class HomeViewModel : ViewModel() {
         _selectedFilter.value = tag
     }
 
+    fun getActivities(): List<ActivityModel> {
+        return _allActivities.value
+    }
+
     private fun sampleActivities(): List<ActivityModel> {
         return listOf(
             ActivityModel(

@@ -1,5 +1,6 @@
 package com.example.spawn_app_android.presentation.screens
 
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,10 +26,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -37,20 +40,56 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.domain.model.ActivityModel
 import com.example.spawn_app_android.presentation.viewModels.HomeViewModel
+import androidx.compose.foundation.lazy.items
+
+
+@Composable
+fun HomeScreenScrollable(viewModel: HomeViewModel = viewModel()) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        item {
+            HomeScreen(viewModel)
+        }
+
+    }
+}
+
+@Composable
+fun SimpleLazyColumn() {
+    LazyColumn(
+        modifier = Modifier.padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+
+    ) {
+        items(3) { index ->
+            Text(
+                text = "Item #$index",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                color = Color.Black
+            )
+        }
+    }
+}
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
+    SetDarkStatusBarIcons()
 //    val activities by viewModel.filteredActivities.collectAsState()
     val filters = listOf("Eat", "Gym", "Study", "Chill")
     Column(
         modifier = Modifier
-            .fillMaxWidth(),
-
-        ) {
+            .fillMaxWidth()
+            .padding(top = 10.dp),
+    ) {
         Image(
             modifier = Modifier
                 .padding(0.72903.dp)
@@ -74,21 +113,22 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             FilterRow(filters = filters, onFilterSelected = viewModel::setFilter)
 
             Spacer(modifier = Modifier.height(30.dp))
-            ActivitiesReel()
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-//            items(activities) { activity ->
-//                ActivityCard(activity)
-//            }
-            }
+            ActivitiesReel(viewModel)
         }
     }
-
-
 }
+
+@Composable
+fun SetDarkStatusBarIcons() {
+    val view = LocalView.current
+    val window = (view.context as? Activity)?.window ?: return
+
+    SideEffect {
+        // Make status bar icons dark (suitable for light background)
+        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
+    }
+}
+
 
 @Composable
 fun FilterRow(filters: List<String>, onFilterSelected: (String?) -> Unit) {
@@ -160,12 +200,14 @@ fun ImageCard(iconId: Int, caption: String) {
 }
 
 @Composable
-fun ActivitiesReel() {
+fun ActivitiesReel(viewModel: HomeViewModel) {
     // will later be fetched using HomeViewModel
     val activities = listOf<ActivityModel>()
 
-    Row(modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
 
         Text(
             "See what’s happening", style = MaterialTheme.typography.titleMedium,
@@ -178,9 +220,14 @@ fun ActivitiesReel() {
         )
     }
 
-    val event = ActivityModel("1", "Late Night Ramen Run", "Alex Chen", "10:30 PM", "Downtown Ramen Bar", "2.1 km", "Eat", "HAPPENING NOW")
-
-    ActivityCard(event)
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(vertical = 8.dp)
+    ) {
+        items(viewModel.getActivities()) { activity ->
+            ActivityCard(activity)
+        }
+    }
 }
 
 @Composable
@@ -190,11 +237,11 @@ fun ActivityCard(activity: ActivityModel) {
             .fillMaxWidth()
             .padding(vertical = 6.dp),
         colors = CardDefaults.cardColors(
-            containerColor = when (activity.tag) {
-                "Eat" -> colorResource(R.color.activity_red)
-                "Gym" -> colorResource(R.color.activity_indigo)
-                "Study" -> colorResource(R.color.activity_purple)
-                "Chill" -> colorResource(R.color.activity_indigo_dark)
+            containerColor = when (activity.tag.lowercase()) {
+                "eat" -> colorResource(R.color.activity_red)
+                "gym" -> colorResource(R.color.activity_indigo)
+                "study" -> colorResource(R.color.activity_purple)
+                "chill" -> colorResource(R.color.activity_indigo_dark)
                 else -> colorResource(R.color.black_400)
             }
         )
