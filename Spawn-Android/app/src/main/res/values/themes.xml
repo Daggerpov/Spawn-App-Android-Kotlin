@@ -2,4 +2,8 @@
 <resources>
 
     <style name="Theme.SpawnAppAndroid" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.SpawnAppSplash" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowSplashScreenBackground">@color/activity_indigo</item>
+        <item name="android:windowSplashScreenAnimationDuration">1000</item>
+    </style>
 </resources>

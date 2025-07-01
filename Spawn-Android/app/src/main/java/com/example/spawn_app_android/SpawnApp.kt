@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.navigation.compose.*
 import com.example.spawn_app_android.presentation.navigation.BottomNavItem
 import com.example.spawn_app_android.presentation.screens.*
+
 @Composable
 fun SpawnApp() {
     val navController = rememberNavController()
@@ -21,10 +23,16 @@ fun SpawnApp() {
     Scaffold(
         bottomBar = {
             NavigationBar {
-                val currentDestination = navController.currentBackStackEntryAsState().value?.destination?.route
+                val currentDestination =
+                    navController.currentBackStackEntryAsState().value?.destination?.route
                 items.forEach { item ->
                     NavigationBarItem(
-                        icon = { Icon(item.icon, contentDescription = item.label) },
+                        icon = {
+                            Icon(
+                                painter = painterResource(id = item.iconResId),
+                                contentDescription = item.label
+                            )
+                        },
                         label = { Text(item.label) },
                         selected = currentDestination == item.route,
                         onClick = {
@@ -48,7 +56,7 @@ fun SpawnApp() {
             startDestination = BottomNavItem.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(BottomNavItem.Home.route) { EventsPage() }
+            composable(BottomNavItem.Home.route) { HomeScreen() }
             composable(BottomNavItem.Map.route) { MapPage() }
             composable(BottomNavItem.Activities.route) { ActivitesScreen() }
             composable(BottomNavItem.Friends.route) { FriendsScreen() }

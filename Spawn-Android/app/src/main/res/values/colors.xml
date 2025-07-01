@@ -7,4 +7,11 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="activity_indigo">#536AEE</color>
+    <color name="activity_red">#FD4E4C</color>
+    <color name="activity_indigo_dark">#242CBB</color>
+    <color name="activity_purple">#713DE5</color>
+    <color name="text_contrast">#857C7C</color>
+    <color name="black_400">#666060</color>
 </resources>

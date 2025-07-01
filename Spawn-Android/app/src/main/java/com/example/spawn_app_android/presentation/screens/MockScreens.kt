@@ -7,8 +7,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.spawn_app_android.presentation.viewModels.HomeViewModel
 
-@Composable fun HomeScreen() = ScreenTemplate("Home")
+val vm = HomeViewModel()
+
+@Composable fun HomeScreen() = HomeScreen(vm)
 @Composable fun MapScreen() = ScreenTemplate("Map")
 @Composable fun ActivitesScreen() = ScreenTemplate("Activities")
 @Composable fun FriendsScreen() = ScreenTemplate("Friends")
