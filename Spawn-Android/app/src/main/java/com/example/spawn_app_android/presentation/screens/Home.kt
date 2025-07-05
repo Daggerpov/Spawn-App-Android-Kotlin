@@ -2,6 +2,7 @@ package com.example.spawn_app_android.presentation.screens
 
 import android.app.Activity
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,20 +16,30 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
@@ -45,7 +56,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.domain.model.ActivityModel
 import com.example.spawn_app_android.presentation.viewModels.HomeViewModel
-import androidx.compose.foundation.lazy.items
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -211,12 +223,24 @@ fun ActivitiesReel(viewModel: HomeViewModel) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivityCard(activity: ActivityModel) {
+    //region DECLARATIONS
+    val coroutineScope = rememberCoroutineScope()
+    var showSheet by remember { mutableStateOf(false) }
+
+    // Trigger function from anywhere
+    fun triggerBottomSheet() {
+        showSheet = true
+    }
+    //endregion
+
+    //region ACTIVITY CARD CONTENT
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 16.dp),
         colors = CardDefaults.cardColors(
             containerColor = when (activity.tag.lowercase()) {
                 "eat" -> colorResource(R.color.activity_red)
@@ -225,7 +249,8 @@ fun ActivityCard(activity: ActivityModel) {
                 "chill" -> colorResource(R.color.activity_indigo_dark)
                 else -> colorResource(R.color.black_400)
             }
-        )
+        ),
+        onClick = { triggerBottomSheet() }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(activity.title, style = MaterialTheme.typography.titleLarge, color = Color.White)
@@ -237,9 +262,16 @@ fun ActivityCard(activity: ActivityModel) {
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier
+                    .padding(0.dp)
+                    .clip(RoundedCornerShape(100.dp))
+                    .background(Color.Black.copy(alpha = 0.2f))
+                    .padding(12.dp, 6.dp, 12.dp, 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
-                    Icons.Default.Place,
+                    painterResource(id = R.drawable.ic_location),
                     contentDescription = "location",
                     tint = Color.White,
                     modifier = Modifier.size(16.dp)
@@ -251,20 +283,157 @@ fun ActivityCard(activity: ActivityModel) {
                     modifier = Modifier.padding(start = 4.dp)
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            AssistChip(
-                onClick = {},
-                label = { Text(activity.status) },
-                colors = AssistChipDefaults.assistChipColors(
-                    containerColor = Color.White.copy(alpha = 0.2f),
-                    labelColor = Color.White
-                )
+        Text(
+            modifier = Modifier
+                .clip(RoundedCornerShape(topStart = 8.dp))
+                .padding(0.dp)
+                .background(pickTagColor(activity.status))
+                .padding(10.dp, 6.dp, 10.dp, 6.dp)
+                .align(Alignment.End),
+            text = activity.status,
+            style = TextStyle(
+                fontSize = 11.sp,
+                fontWeight = FontWeight(600),
+                color = colorResource(R.color.transparentBlack80),
             )
+        )
+        //endregion
+
+        //region ACTIVITY BOTTOM SHEET
+        if (showSheet) {
+            val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+            LaunchedEffect(Unit) {
+                sheetState.show()
+            }
+
+            ModalBottomSheet(
+                onDismissRequest = {
+                    coroutineScope.launch {
+                        sheetState.hide()
+                        showSheet = false
+                    }
+                },
+                sheetState = sheetState,
+                containerColor = colorResource(R.color.activity_indigo)
+            ) {//region BOTTOM SHEET UI
+                Column(Modifier.padding(24.dp)) {
+                    Icon(
+                        modifier = Modifier
+                            .align(Alignment.Start),
+                        painter = painterResource(R.drawable.ic_expand),
+                        contentDescription = "expand",
+                        tint = Color.White
+                    )
+//region TITLE
+                    Spacer(modifier = Modifier.height(16.dp))
+                    SpawnTitleTxt(content = activity.title, color = Color.White)
+//endregion
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SpawnBodyTxt(content = "${activity.status} • ${activity.time}", color = Color.White)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    SpawnButton(
+                        modifier = Modifier,
+                        content = "Spawn In!",
+                        txtColor = colorResource(R.color.activity_indigo),
+                        bgColor = Color.White)
+                }
+//                BottomSheetUI(coroutineScope, sheetState)
+                //endregion
+            }
+        }
+        //endregion
+
+    }
+}
+
+@Composable
+private fun SpawnTitleTxt(
+    modifier: Modifier = Modifier,
+    content: String,
+    color: Color = Color.Black
+) {
+    Text(
+        modifier = modifier,
+        text = content,
+        style = TextStyle(
+            fontSize = 28.sp,
+            fontWeight = FontWeight(600),
+            fontFamily = MaterialTheme.typography.titleLarge.fontFamily,
+            color = color,
+        )
+    )
+}
+
+@Composable
+private fun SpawnBodyTxt(
+    modifier: Modifier = Modifier,
+    content: String,
+    color: Color = Color.Black
+) {
+    Text(
+        modifier = modifier,
+        text = content,
+        style = TextStyle(
+            fontSize = 12.sp,
+            fontWeight = FontWeight(600),
+            fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
+            color = color,
+        )
+    )
+}
+
+@Composable
+private fun SpawnButton(modifier: Modifier = Modifier, content: String, txtColor: Color, bgColor: Color ) {
+        Button(
+            modifier = modifier,
+            onClick = { /* Handle click */ },
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = bgColor),
+        ) {
+            Text(
+                text = content,
+                color = txtColor,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+                fontSize = 17.sp,
+                fontFamily = MaterialTheme.typography.bodyLarge.fontFamily
+            )
+        }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BottomSheetUI(coroutineScope: CoroutineScope, sheetState: SheetState) {
+    Column(Modifier.padding(24.dp)) {
+        Text("This is the bottom sheet content!")
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = {
+            coroutineScope.launch {
+                sheetState.hide()
+//                showSheet = false
+            }
+        }) {
+            Text("Close")
         }
     }
 }
+
+
+@Composable
+private fun pickTagColor(activityStatus: String): Color {
+    if (activityStatus.lowercase() == "happening now") {
+        return colorResource(R.color.green400)
+    } else {
+        return Color.White
+    }
+}
+
 
 @Preview
 @Composable
