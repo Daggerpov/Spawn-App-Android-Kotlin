@@ -207,7 +207,7 @@ fun ActivitiesReel(viewModel: HomeViewModel) {
             color = colorResource(R.color.black_400)
         )
         Text(
-            "See all", style = MaterialTheme.typography.titleMedium,
+            "See all", style = MaterialTheme.typography.labelSmall,
             fontSize = 12.sp,
             color = colorResource(R.color.activity_indigo)
         )

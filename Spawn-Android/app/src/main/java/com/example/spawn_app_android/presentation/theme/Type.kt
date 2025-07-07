@@ -28,8 +28,14 @@ val Typography = Typography(
     ),
     headlineMedium = TextStyle(
         fontFamily = SpawnFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 24.sp,
+        lineHeight = 28.sp,
+    ),
+    headlineSmall = TextStyle(
+        fontFamily = SpawnFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 20.sp,
         lineHeight = 28.sp,
     ),
 //     Other default text styles to override
