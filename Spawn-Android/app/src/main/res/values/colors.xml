@@ -16,4 +16,6 @@
     <color name="black_400">#666060</color>
     <color name="transparentBlack80">#CC000000</color>
     <color name="green400">#46DEA1</color>"
+
+    <color name="secondary_bg">#FFFFFF</color>
 </resources>

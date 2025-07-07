@@ -253,7 +253,7 @@ fun ActivityCard(activity: ActivityModel) {
         onClick = { triggerBottomSheet() }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(activity.title, style = MaterialTheme.typography.titleLarge, color = Color.White)
+            Text(activity.title, style = MaterialTheme.typography.headlineMedium, color = Color.White)
             Text(
                 "By ${activity.host} • ${activity.time}",
                 style = MaterialTheme.typography.bodySmall,

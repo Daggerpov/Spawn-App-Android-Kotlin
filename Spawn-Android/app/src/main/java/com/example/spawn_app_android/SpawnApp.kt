@@ -8,6 +8,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.navigation.compose.*
 import com.example.spawn_app_android.presentation.navigation.BottomNavItem
 import com.example.spawn_app_android.presentation.screens.*
+import com.example.spawn_app_android.presentation.screens.activities.Activities
 
 @Composable
 fun SpawnApp() {
@@ -58,9 +59,9 @@ fun SpawnApp() {
         ) {
             composable(BottomNavItem.Home.route) { HomeScreen() }
             composable(BottomNavItem.Map.route) { MapPage() }
-            composable(BottomNavItem.Activities.route) { ActivitesScreen() }
-            composable(BottomNavItem.Friends.route) { FriendsScreen() }
-            composable(BottomNavItem.Profile.route) { ProfileScreen() }
+            composable(BottomNavItem.Activities.route) { Activities() }
+            composable(BottomNavItem.Friends.route) { FriendsPage() }
+            composable(BottomNavItem.Profile.route) { ProfilePage() }
         }
     }
 }

@@ -87,5 +87,7 @@ dependencies {
     implementation ("androidx.compose.material3:material3:1.3.2")
     implementation ("androidx.navigation:navigation-compose:2.9.0")
     implementation("androidx.core:core-splashscreen:1.0.0")
+    implementation ("androidx.compose.foundation:foundation:1.8.3")
+
 
 }

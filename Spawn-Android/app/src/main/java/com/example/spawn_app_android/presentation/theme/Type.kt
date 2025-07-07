@@ -29,8 +29,8 @@ val Typography = Typography(
     headlineMedium = TextStyle(
         fontFamily = SpawnFontFamily,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 24.sp,
-        lineHeight = 28.sp,
+        fontSize = 20.sp,
+        lineHeight = 20.sp,
     ),
     headlineSmall = TextStyle(
         fontFamily = SpawnFontFamily,
@@ -45,6 +45,13 @@ val Typography = Typography(
         fontSize = 32.sp,
         lineHeight = 32.sp,
         letterSpacing = 0.sp
+    ),
+    labelMedium = TextStyle(
+        fontFamily = SpawnFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 13.sp,
+        lineHeight = 15.sp,
+        letterSpacing = 0.5.sp
     ),
     labelSmall = TextStyle(
         fontFamily = SpawnFontFamily,
