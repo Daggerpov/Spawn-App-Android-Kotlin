@@ -100,7 +100,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Text("Hey Daniel! 👋", style = MaterialTheme.typography.headlineMedium)
+            Text("Hey Daniel! 👋", style = MaterialTheme.typography.titleLarge)
 
             Spacer(modifier = Modifier.height(8.dp))
             FilterRow(filters = filters, onFilterSelected = viewModel::setFilter)
