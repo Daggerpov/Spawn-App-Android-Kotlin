@@ -1,6 +1,5 @@
 package com.example.spawn_app_android.presentation.screens
 
-import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -31,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -51,10 +48,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.domain.model.ActivityModel
+import com.example.spawn_app_android.presentation.screens.Utils.SetDarkStatusBarIcons
 import com.example.spawn_app_android.presentation.viewModels.HomeViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -108,17 +105,6 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             Spacer(modifier = Modifier.height(30.dp))
             ActivitiesReel(viewModel)
         }
-    }
-}
-
-@Composable
-fun SetDarkStatusBarIcons() {
-    val view = LocalView.current
-    val window = (view.context as? Activity)?.window ?: return
-
-    SideEffect {
-        // Make status bar icons dark (suitable for light background)
-        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
     }
 }
 

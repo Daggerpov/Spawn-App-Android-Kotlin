@@ -9,6 +9,7 @@ import androidx.navigation.compose.*
 import com.example.spawn_app_android.presentation.navigation.BottomNavItem
 import com.example.spawn_app_android.presentation.screens.*
 import com.example.spawn_app_android.presentation.screens.activities.Activities
+import com.example.spawn_app_android.presentation.screens.authFlow.LoginPage
 
 @Composable
 fun SpawnApp() {
@@ -20,6 +21,11 @@ fun SpawnApp() {
         BottomNavItem.Friends,
         BottomNavItem.Profile
     )
+
+//    val authViewModel: AuthViewModel = viewModel()
+//    val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+    val isLoggedIn = false
+
 
     Scaffold(
         bottomBar = {
@@ -57,6 +63,16 @@ fun SpawnApp() {
             startDestination = BottomNavItem.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable("login") {
+                LoginPage(
+                    onLoginSuccess = {
+                        navController.navigate("main") {
+                            popUpTo("login") { inclusive = true } // removes login from backstack
+                        }
+                    }
+                )
+            }
+
             composable(BottomNavItem.Home.route) { HomeScreen() }
             composable(BottomNavItem.Map.route) { MapPage() }
             composable(BottomNavItem.Activities.route) { Activities() }

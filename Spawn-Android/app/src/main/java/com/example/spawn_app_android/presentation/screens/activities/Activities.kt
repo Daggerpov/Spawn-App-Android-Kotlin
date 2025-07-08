@@ -1,6 +1,8 @@
 package com.example.spawn_app_android.presentation.screens.activities
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -13,7 +15,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.spawn_app_android.R
+import com.example.spawn_app_android.presentation.screens.authFlow.subComponents.GetLoginDetails
 
 @Composable
 fun Activities() {
@@ -45,7 +50,8 @@ fun Activities() {
             modifier = Modifier
                 .align(Alignment.CenterHorizontally),
             text = stringResource(id = R.string.activity_edit),
-            style = MaterialTheme.typography.labelMedium)
+            style = MaterialTheme.typography.labelMedium
+        )
 
     }
 }
@@ -79,7 +85,11 @@ private fun CategoriesCluster() {
                 tint = Color.Unspecified
             )
             Spacer(modifier = Modifier.height(12.dp))
-            Text(text = "Create New Activity", style = MaterialTheme.typography.labelSmall, maxLines = 2)
+            Text(
+                text = "Create New Activity",
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 2
+            )
         }
 
     }
@@ -87,11 +97,17 @@ private fun CategoriesCluster() {
 
 @Composable
 private fun CategoryCard(cat: String, icon: Int) {
+    val interactionSource = remember { MutableInteractionSource() }
     Column(
         modifier = Modifier
             .size(116.dp, 116.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(colorResource(R.color.secondary_bg)),
+            .background(colorResource(R.color.secondary_bg))
+            .clickable(
+                onClick = {  },
+                interactionSource = interactionSource,
+                indication = ripple()
+            ),
         verticalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
