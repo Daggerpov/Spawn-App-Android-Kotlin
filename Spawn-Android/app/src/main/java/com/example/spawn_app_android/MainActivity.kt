@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.spawn_app_android.presentation.navigation.AppRoot
 import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
 
 
@@ -17,7 +18,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             SpawnAppAndroidTheme {
-                SpawnApp()
+                AppRoot()
             }
         }
     }

@@ -83,11 +83,17 @@ dependencies {
 
     // GSON
     implementation ("com.squareup.retrofit2:converter-gson:2.11.0")
-    implementation ("androidx.compose.ui:ui:1.8.2")
+    implementation ("androidx.compose.ui:ui:1.8.3")
     implementation ("androidx.compose.material3:material3:1.3.2")
-    implementation ("androidx.navigation:navigation-compose:2.9.0")
-    implementation("androidx.core:core-splashscreen:1.0.0")
+    implementation ("androidx.navigation:navigation-compose:2.9.1")
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation ("androidx.compose.foundation:foundation:1.8.3")
+
+    //region Sign in with Google
+    implementation ("androidx.credentials:credentials:1.5.0")
+    implementation ("androidx.credentials:credentials-play-services-auth:1.5.0")
+    implementation ("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    //end region
 
 
 }
