@@ -5,10 +5,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.*
 import com.example.spawn_app_android.presentation.navigation.BottomNavItem
 import com.example.spawn_app_android.presentation.screens.*
-import com.example.spawn_app_android.presentation.screens.activities.flow.Activities
+import com.example.spawn_app_android.presentation.screens.activities.ActivityRoutes
+import com.example.spawn_app_android.presentation.screens.activities.ActivityViewModel
+import com.example.spawn_app_android.presentation.screens.activities.createActivityNavGraph
 import com.example.spawn_app_android.presentation.screens.authFlow.LoginPage
 import com.example.spawn_app_android.presentation.viewModels.AuthViewModel
 
@@ -25,9 +29,9 @@ fun SpawnApp(
         BottomNavItem.Profile
     )
 
-//    val authViewModel: AuthViewModel = viewModel()
-//    val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
-    val isLoggedIn = false
+    val authViewModel: AuthViewModel = viewModel()
+    val activityViewModel: ActivityViewModel = viewModel()
+    val isLoggedIn by authViewModel._isLoggedIn.collectAsState()
 
 
     Scaffold(
@@ -44,7 +48,12 @@ fun SpawnApp(
                             )
                         },
                         label = { Text(item.label) },
-                        selected = currentDestination == item.route,
+                        selected = navController
+                            .currentBackStackEntryAsState()
+                            .value
+                            ?.destination
+                            ?.hierarchy
+                            ?.any { it.route == item.route } == true,
                         onClick = {
                             if (currentDestination != item.route) {
                                 navController.navigate(item.route) {
@@ -79,7 +88,14 @@ fun SpawnApp(
 
             composable(BottomNavItem.Home.route) { HomeScreen() }
             composable(BottomNavItem.Map.route) { MapPage() }
-            composable(BottomNavItem.Activities.route) { Activities() }
+
+            navigation(
+                startDestination = ActivityRoutes.STEP1,
+                route = BottomNavItem.Activities.route
+            ) {
+                createActivityNavGraph(navController, activityViewModel)
+            }
+
             composable(BottomNavItem.Friends.route) { FriendsPage() }
             composable(BottomNavItem.Profile.route) { ProfilePage() }
         }

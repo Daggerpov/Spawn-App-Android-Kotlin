@@ -3,23 +3,35 @@ package com.example.spawn_app_android.presentation.screens.activities
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import com.example.spawn_app_android.presentation.screens.activities.ActivityRoutes
+import com.example.spawn_app_android.presentation.screens.activities.flow.ActivitiesScreen
 import com.example.spawn_app_android.presentation.screens.activities.flow.SetActivityTimeScreen
 
-fun NavGraphBuilder.createEventNavGraph(
+object ActivityRoutes {
+    const val STEP1 = "step1"
+    const val STEP2 = "step2"
+    const val STEP3 = "step3"
+    const val STEP4 = "step4"
+}
+
+fun NavGraphBuilder.createActivityNavGraph(
     navController: NavHostController,
     activityViewModel: ActivityViewModel
 ) {
     // TODO: Need to setup Dependecy Injection with Hilt
-//    composable("step1") {
-//        val viewModel: CreateEventViewModel = hiltViewModel()
-//        Screen1SetActivityTime(
-//            state = viewModel.state,
-//            onEvent = viewModel::onEvent,
-//            onNext = { navController.navigate("step2") }
-//        )
-//    }
+    composable(ActivityRoutes.STEP1) {
+//        val viewModel: ActivityViewModel = hiltViewModel()
+        ActivitiesScreen(
+            onNext = { navController.navigate("step2") },
+            activityViewModel = activityViewModel
+        )
+    }
 
-    composable("step2") { SetActivityTimeScreen(activityViewModel) }
-    composable("step3") { /* similar */ }
-    composable("step4") { /* final submit + summary */ }
+    composable(ActivityRoutes.STEP2) {
+        SetActivityTimeScreen(
+            vmActivity = activityViewModel,
+            onNext = { navController.navigate("step3") })
+    }
+    composable(ActivityRoutes.STEP3) { /* similar */ }
+    composable(ActivityRoutes.STEP4) { /* final submit + summary */ }
 }

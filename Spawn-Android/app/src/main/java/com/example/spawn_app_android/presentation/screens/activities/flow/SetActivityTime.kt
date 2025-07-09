@@ -2,6 +2,7 @@ package com.example.spawn_app_android.presentation.screens.activities.flow
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
@@ -11,13 +12,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
+import com.example.spawn_app_android.presentation.screens.Utils.getNotifBarPadding
+import com.example.spawn_app_android.presentation.screens.activities.CreateActivityEvent
 import java.util.Calendar
 
 @Composable
-fun SetActivityTimeScreen(vmActivity: ViewModel) {
+fun SetActivityTimeScreen(
+    onNext: () -> Unit,
+    vmActivity: ViewModel
+) {
     Column(
         modifier = Modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .padding(getNotifBarPadding()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         CustomTimePicker()
