@@ -10,9 +10,12 @@ import com.example.spawn_app_android.presentation.navigation.BottomNavItem
 import com.example.spawn_app_android.presentation.screens.*
 import com.example.spawn_app_android.presentation.screens.activities.Activities
 import com.example.spawn_app_android.presentation.screens.authFlow.LoginPage
+import com.example.spawn_app_android.presentation.viewModels.AuthViewModel
 
 @Composable
-fun SpawnApp() {
+fun SpawnApp(
+    authViewModel: AuthViewModel
+) {
     val navController = rememberNavController()
     val items = listOf(
         BottomNavItem.Home,
@@ -69,7 +72,8 @@ fun SpawnApp() {
                         navController.navigate("main") {
                             popUpTo("login") { inclusive = true } // removes login from backstack
                         }
-                    }
+                    },
+                    authViewModel = authViewModel
                 )
             }
 

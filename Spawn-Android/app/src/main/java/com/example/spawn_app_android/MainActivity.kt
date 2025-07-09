@@ -31,5 +31,4 @@ class MainActivity : ComponentActivity() {
 )
 @Composable
 fun Preview() {
-    SpawnApp()
 }
