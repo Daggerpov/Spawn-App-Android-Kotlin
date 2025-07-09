@@ -5,14 +5,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,6 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.spawn_app_android.R
+import com.example.spawn_app_android.presentation.screens.Utils.SetDarkStatusBarIcons
 import com.example.spawn_app_android.presentation.viewModels.AuthViewModel
 
 @Composable
@@ -36,6 +41,8 @@ fun LoginPage(
     onLoginSuccess: () -> Unit,
     authViewModel: AuthViewModel
 ) {
+    SetDarkStatusBarIcons()
+    val insets = WindowInsets.statusBars.asPaddingValues()
     val isLoggedIn = remember { authViewModel.getLoggedIn() }
 
     LaunchedEffect(true) {
@@ -46,8 +53,9 @@ fun LoginPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colorResource(R.color.activity_indigo)),
-        verticalArrangement = Arrangement.Bottom,
+            .background(colorResource(R.color.white))
+            .padding(top = insets.calculateTopPadding()),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -62,11 +70,12 @@ fun LoginPage(
             color = Color.Black,
             textAlign = TextAlign.Center
         )
+        Spacer(Modifier.height(71.dp))
         //region Sign in Partners
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(32.dp, 0.dp),
+                .padding(32.dp, 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
@@ -79,7 +88,7 @@ fun LoginPage(
                     if (authViewModel.getLoggedIn()) onLoginSuccess()
                 }
             )
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(14.dp))
             LoginOptionButton(
                 stringResource(R.string.login_apple),
                 R.drawable.logo_apple,
@@ -103,8 +112,9 @@ private fun LoginOptionButton(text: String, icon: Int, onClick: () -> Unit) {
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .background(colorResource(R.color.activity_indigo))
-            .padding(32.dp, 20.dp), // margin
+            .background(colorResource(R.color.white))
+            .padding(horizontal = 32.dp), // margin
+        colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.white_f5f5f5))
     ) {
         Row(
             modifier = Modifier

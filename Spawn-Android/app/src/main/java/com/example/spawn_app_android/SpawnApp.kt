@@ -8,7 +8,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.navigation.compose.*
 import com.example.spawn_app_android.presentation.navigation.BottomNavItem
 import com.example.spawn_app_android.presentation.screens.*
-import com.example.spawn_app_android.presentation.screens.activities.Activities
+import com.example.spawn_app_android.presentation.screens.activities.flow.Activities
 import com.example.spawn_app_android.presentation.screens.authFlow.LoginPage
 import com.example.spawn_app_android.presentation.viewModels.AuthViewModel
 
