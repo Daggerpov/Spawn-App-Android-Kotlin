@@ -29,7 +29,7 @@ fun NavGraphBuilder.createActivityNavGraph(
 
     composable(ActivityRoutes.STEP2) {
         SetActivityTimeScreen(
-            vmActivity = activityViewModel,
+            activityViewModel = activityViewModel,
             onNext = { navController.navigate("step3") })
     }
     composable(ActivityRoutes.STEP3) { /* similar */ }

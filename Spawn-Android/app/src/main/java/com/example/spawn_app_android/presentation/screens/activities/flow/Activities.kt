@@ -12,11 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -31,7 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.presentation.screens.activities.ActivityViewModel
-import com.example.spawn_app_android.presentation.screens.activities.CreateActivityEvent
+import com.example.spawn_app_android.presentation.screens.activities.CreateActivityState
 
 @Composable
 fun ActivitiesScreen(
@@ -50,7 +48,7 @@ fun ActivitiesScreen(
             style = MaterialTheme.typography.headlineMedium
         )
         Spacer(Modifier.height(35.dp))
-        CategoriesCluster({ onNext() })
+        CategoriesCluster(onNext, activityViewModel)
         Spacer(Modifier.height(21.dp))
         Text(
             modifier = Modifier
@@ -58,7 +56,7 @@ fun ActivitiesScreen(
             text = stringResource(id = R.string.activity_edit),
             style = MaterialTheme.typography.labelMedium
         )
-        var state = activityViewModel.state
+        /*var state = activityViewModel.state
         TextField(
             value = state.title,
             onValueChange = { activityViewModel.onEvent(CreateActivityEvent.TitleChanged(it)) }
@@ -71,12 +69,13 @@ fun ActivitiesScreen(
         }) {
             Text("Next")
         }
+         */
 
     }
 }
 
 @Composable
-private fun CategoriesCluster(onClick: () -> Unit) {
+private fun CategoriesCluster(onNext: () -> Unit, activityViewModel: ActivityViewModel) {
     val categories = listOf("Eat", "Gym", "Study", "Chill", "Hike")
     FlowRow(
         modifier = Modifier
@@ -87,7 +86,7 @@ private fun CategoriesCluster(onClick: () -> Unit) {
         maxLines = 2
     ) {
         categories.forEach { category ->
-            CategoryCard(cat = category, icon = getIcon(category), onClick = { onClick })
+            CategoryCard(cat = category, icon = getIcon(category), onNext = onNext, state = activityViewModel.state)
         }
 
         Column(
@@ -115,7 +114,7 @@ private fun CategoriesCluster(onClick: () -> Unit) {
 }
 
 @Composable
-private fun CategoryCard(cat: String, icon: Int, onClick: () -> Unit) {
+private fun CategoryCard(cat: String, icon: Int, onNext: () -> Unit, state: CreateActivityState) {
     val interactionSource = remember { MutableInteractionSource() }
     Column(
         modifier = Modifier
@@ -123,7 +122,9 @@ private fun CategoryCard(cat: String, icon: Int, onClick: () -> Unit) {
             .clip(RoundedCornerShape(12.dp))
             .background(colorResource(R.color.secondary_bg))
             .clickable(
-                onClick = { "onClick() triggered on $cat" },
+                onClick = {
+                    onNext()
+                },
                 interactionSource = interactionSource,
                 indication = ripple()
             ),
