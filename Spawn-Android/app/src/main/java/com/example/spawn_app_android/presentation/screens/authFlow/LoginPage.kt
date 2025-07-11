@@ -23,18 +23,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.spawn_app_android.BuildConfig
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.presentation.screens.Utils.SetDarkStatusBarIcons
+import com.example.spawn_app_android.presentation.screens.authFlow.subComponents.getLoginDetails
 import com.example.spawn_app_android.presentation.viewModels.AuthViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginPage(
@@ -78,14 +83,22 @@ fun LoginPage(
                 .padding(32.dp, 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            val context = LocalContext.current
+            val scope = rememberCoroutineScope()
 
             LoginOptionButton(
                 stringResource(R.string.login_google),
                 R.drawable.logo_google,
                 onClick = {
                     println("Google Card clicked")
-                    authViewModel.setLoggedIn(true)
-                    if (authViewModel.getLoggedIn()) onLoginSuccess()
+                    scope.launch {
+                        getLoginDetails(
+                            context = context,
+                            WEB_CLIENT_ID = BuildConfig.WEB_CLIENT_ID
+                        )
+                        authViewModel.setLoggedIn(true)
+                        if (authViewModel.getLoggedIn()) onLoginSuccess()
+                    }
                 }
             )
             Spacer(Modifier.height(14.dp))

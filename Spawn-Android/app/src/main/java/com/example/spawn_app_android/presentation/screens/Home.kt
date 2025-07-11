@@ -414,7 +414,7 @@ private fun BottomSheetUI(coroutineScope: CoroutineScope, sheetState: SheetState
 @Composable
 private fun pickTagColor(activityStatus: String): Color {
     if (activityStatus.lowercase() == "happening now") {
-        return colorResource(R.color.green400)
+        return colorResource(R.color.icon_positive)
     } else {
         return Color.White
     }
