@@ -29,7 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.presentation.screens.activities.ActivityViewModel
-import com.example.spawn_app_android.presentation.screens.activities.CreateActivityState
+import com.example.spawn_app_android.presentation.screens.activities.CreateActivityEvent
 
 @Composable
 fun ActivitiesScreen(
@@ -86,7 +86,12 @@ private fun CategoriesCluster(onNext: () -> Unit, activityViewModel: ActivityVie
         maxLines = 2
     ) {
         categories.forEach { category ->
-            CategoryCard(cat = category, icon = getIcon(category), onNext = onNext, state = activityViewModel.state)
+            CategoryCard(
+                cat = category,
+                icon = getIcon(category),
+                onNext = onNext,
+                activityViewModel = activityViewModel
+            )
         }
 
         Column(
@@ -114,7 +119,12 @@ private fun CategoriesCluster(onNext: () -> Unit, activityViewModel: ActivityVie
 }
 
 @Composable
-private fun CategoryCard(cat: String, icon: Int, onNext: () -> Unit, state: CreateActivityState) {
+private fun CategoryCard(
+    cat: String,
+    icon: Int,
+    onNext: () -> Unit,
+    activityViewModel: ActivityViewModel
+) {
     val interactionSource = remember { MutableInteractionSource() }
     Column(
         modifier = Modifier
@@ -123,6 +133,7 @@ private fun CategoryCard(cat: String, icon: Int, onNext: () -> Unit, state: Crea
             .background(colorResource(R.color.secondary_bg))
             .clickable(
                 onClick = {
+                    activityViewModel.onEvent(CreateActivityEvent.TagChanged(cat))
                     onNext()
                 },
                 interactionSource = interactionSource,

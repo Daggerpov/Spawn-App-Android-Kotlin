@@ -7,6 +7,7 @@ data class CreateActivityState(
     val description: String = "",
     val location: String = "",
     val dateTime: LocalDateTime? = null,
+    val tag: String = "",
     val isSubmitting: Boolean = false,
     val duration: String = "",
     val error: String? = null

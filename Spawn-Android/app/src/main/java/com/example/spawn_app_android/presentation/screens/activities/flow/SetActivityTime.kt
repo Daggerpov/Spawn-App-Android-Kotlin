@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,12 +20,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TimeInput
-import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,10 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.presentation.screens.Utils.getNotifBarPadding
 import com.example.spawn_app_android.presentation.screens.activities.ActivityViewModel
@@ -50,22 +52,66 @@ import java.util.Calendar
 @Composable
 fun SetActivityTimeScreen(
     onNext: () -> Unit,
-    activityViewModel: ActivityViewModel
+    activityViewModel: ActivityViewModel,
+    onBack: () -> Unit
 ) {
     var state = activityViewModel.state
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = getNotifBarPadding()),
+            .padding(top = getNotifBarPadding(), bottom = 34.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceAround
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
+        SetActivityTimeHeader(state.tag, onBack)
         CustomTimePicker()
         CustomTextField(activityViewModel, state)
         LabelSelector()
         NextStepButton(onClick = onNext)
         SpawnProgressIndicator(currentStep = 1, totalSteps = 3)
     }
+}
+
+@Composable
+private fun SetActivityTimeHeader(type: String, onBack: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 26.dp)
+        ) {
+            BackButton(onClick = onBack)
+
+            Text(
+                stringResource(R.string.what_time),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(6.5.dp))
+
+        Text(
+            "Select a time for your \"$type\" activity",
+            style = MaterialTheme.typography.bodyMedium,
+            color = colorResource(R.color.text_contrast),
+            textAlign = TextAlign.Center,
+        )
+    }
+
+}
+
+@Composable
+private fun BackButton(onClick: () -> Unit) {
+    Icon(
+        modifier = Modifier.clickable { onClick() },
+        painter = painterResource(R.drawable.ic_back_black),
+        contentDescription = stringResource(R.string.app_name)
+    )
 }
 
 @Composable
@@ -218,7 +264,7 @@ fun DialExample(
         initialMinute = currentTime.get(Calendar.MINUTE),
         is24Hour = true,
 
-    )
+        )
 
     Column {
         TimeInput(

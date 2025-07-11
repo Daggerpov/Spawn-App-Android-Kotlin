@@ -30,7 +30,8 @@ fun NavGraphBuilder.createActivityNavGraph(
     composable(ActivityRoutes.STEP2) {
         SetActivityTimeScreen(
             activityViewModel = activityViewModel,
-            onNext = { navController.navigate("step3") })
+            onNext = { navController.navigate("step3") },
+            onBack = { navController.popBackStack() })
     }
     composable(ActivityRoutes.STEP3) { /* similar */ }
     composable(ActivityRoutes.STEP4) { /* final submit + summary */ }

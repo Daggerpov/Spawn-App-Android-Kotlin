@@ -11,4 +11,6 @@
     <string name="title">Title</string>
     <string name="enter_activity_title">Enter Activity Title</string>
     <string name="activity_duration">Activity Duration</string>
+    <string name="back">back</string>
+    <string name="what_time">What time?</string>
 </resources>

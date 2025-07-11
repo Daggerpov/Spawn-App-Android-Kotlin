@@ -34,6 +34,10 @@ class ActivityViewModel(
                 state = state.copy(dateTime = activityEvent.time)
             }
 
+            is CreateActivityEvent.TagChanged -> {
+                state = state.copy(tag = activityEvent.tag)
+            }
+
             is CreateActivityEvent.DurationChanged -> {
                 state = state.copy(duration = activityEvent.duration)
             }
