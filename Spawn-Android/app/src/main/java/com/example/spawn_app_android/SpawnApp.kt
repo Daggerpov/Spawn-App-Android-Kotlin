@@ -1,5 +1,7 @@
 package com.example.spawn_app_android
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -9,6 +11,7 @@ import androidx.navigation.compose.*
 import com.example.spawn_app_android.presentation.navigation.BottomNavItem
 import com.example.spawn_app_android.presentation.screens.*
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SpawnApp() {
     val navController = rememberNavController()
@@ -60,7 +63,7 @@ fun SpawnApp() {
             composable(BottomNavItem.Map.route) { MapPage() }
             composable(BottomNavItem.Activities.route) { ActivitesScreen() }
             composable(BottomNavItem.Friends.route) { FriendsScreen() }
-            composable(BottomNavItem.Profile.route) { ProfileScreen() }
+            composable(BottomNavItem.Profile.route) { ProfilePage() }
         }
     }
 }
