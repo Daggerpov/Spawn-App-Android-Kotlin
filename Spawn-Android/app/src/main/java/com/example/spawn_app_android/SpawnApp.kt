@@ -1,5 +1,7 @@
 package com.example.spawn_app_android
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +18,7 @@ import com.example.spawn_app_android.presentation.screens.activities.createActiv
 import com.example.spawn_app_android.presentation.screens.authFlow.LoginPage
 import com.example.spawn_app_android.presentation.viewModels.AuthViewModel
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SpawnApp(
     authViewModel: AuthViewModel
