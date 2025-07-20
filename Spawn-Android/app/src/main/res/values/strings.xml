@@ -13,4 +13,7 @@
     <string name="activity_duration">Activity Duration</string>
     <string name="back">back</string>
     <string name="what_time">What time?</string>
+    <string name="choose_location">Choose location</string>
+    <string name="where_at">Where at?</string>
+    <string name="location_dummy">Maps will display here</string>
 </resources>

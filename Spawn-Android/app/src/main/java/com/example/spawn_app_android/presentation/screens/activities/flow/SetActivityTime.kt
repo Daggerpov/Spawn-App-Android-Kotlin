@@ -84,7 +84,7 @@ private fun SetActivityTimeHeader(type: String, onBack: () -> Unit) {
                 .fillMaxWidth()
                 .padding(horizontal = 26.dp)
         ) {
-            BackButton(onClick = onBack)
+            BackButton(onClick = onBack, icon = R.drawable.ic_back_black)
 
             Text(
                 stringResource(R.string.what_time),
@@ -106,10 +106,10 @@ private fun SetActivityTimeHeader(type: String, onBack: () -> Unit) {
 }
 
 @Composable
-private fun BackButton(onClick: () -> Unit) {
+fun BackButton(onClick: () -> Unit, icon: Int) {
     Icon(
         modifier = Modifier.clickable { onClick() },
-        painter = painterResource(R.drawable.ic_back_black),
+        painter = painterResource(icon),
         contentDescription = stringResource(R.string.app_name)
     )
 }

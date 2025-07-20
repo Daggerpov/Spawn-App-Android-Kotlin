@@ -1,10 +1,11 @@
 package com.example.spawn_app_android.presentation.screens.activities
 
+import android.util.Log
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import com.example.spawn_app_android.presentation.screens.activities.ActivityRoutes
 import com.example.spawn_app_android.presentation.screens.activities.flow.ActivitiesScreen
+import com.example.spawn_app_android.presentation.screens.activities.flow.SetActivityLocation
 import com.example.spawn_app_android.presentation.screens.activities.flow.SetActivityTimeScreen
 
 object ActivityRoutes {
@@ -15,24 +16,25 @@ object ActivityRoutes {
 }
 
 fun NavGraphBuilder.createActivityNavGraph(
-    navController: NavHostController,
-    activityViewModel: ActivityViewModel
+    navController: NavHostController, activityViewModel: ActivityViewModel
 ) {
     // TODO: Need to setup Dependecy Injection with Hilt
     composable(ActivityRoutes.STEP1) {
 //        val viewModel: ActivityViewModel = hiltViewModel()
         ActivitiesScreen(
-            onNext = { navController.navigate("step2") },
-            activityViewModel = activityViewModel
+            onNext = { navController.navigate("step2") }, activityViewModel = activityViewModel
         )
     }
 
     composable(ActivityRoutes.STEP2) {
-        SetActivityTimeScreen(
-            activityViewModel = activityViewModel,
-            onNext = { navController.navigate("step3") },
+        SetActivityTimeScreen(activityViewModel = activityViewModel,
+            onNext = { navController.navigate(ActivityRoutes.STEP3) },
             onBack = { navController.popBackStack() })
     }
-    composable(ActivityRoutes.STEP3) { /* similar */ }
+    composable(ActivityRoutes.STEP3) {
+        SetActivityLocation(activityViewModel = activityViewModel,
+            onNext = { navController.navigate("step4") },
+            onBack = { navController.popBackStack() })
+    }
     composable(ActivityRoutes.STEP4) { /* final submit + summary */ }
 }
