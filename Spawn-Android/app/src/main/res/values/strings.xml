@@ -2,4 +2,18 @@
     <string name="app_name">Spawn</string>
     <string name="hello">Hello,</string>
     <string name="spawn_in">Spawn in!</string>
+    <string name="activities_header">What are you up to?</string>
+    <string name="activity_edit">Press &amp; hold to edit</string>
+    <string name="login_google">Sign in with Google</string>
+    <string name="login_apple">Sign in with Apple</string>
+    <string name="create_your_account">Create Your Account</string>
+    <string name="sign_in_desc">Choose how you’d like to set up your account.</string>
+    <string name="title">Title</string>
+    <string name="enter_activity_title">Enter Activity Title</string>
+    <string name="activity_duration">Activity Duration</string>
+    <string name="back">back</string>
+    <string name="what_time">What time?</string>
+    <string name="choose_location">Choose location</string>
+    <string name="where_at">Where at?</string>
+    <string name="location_dummy">Maps will display here</string>
 </resources>

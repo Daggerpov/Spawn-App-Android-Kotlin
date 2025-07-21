@@ -8,3 +8,11 @@ val Pink80 = Color(0xFFEFB8C8)
 val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
+
+val spawnIndigo = Color(0xFF6B81FB)
+val transparentBlack80 = Color(0xCC000000)
+
+// Dark Theme
+val backgroundPrimaryDark = Color(0xFF1F1E1E)
+val backgroundSecondaryDark = Color(0xFF3E3B3B)
+val iconNavInactiveDark = Color(0xFFA9A0A0)

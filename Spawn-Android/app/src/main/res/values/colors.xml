@@ -14,4 +14,9 @@
     <color name="activity_purple">#713DE5</color>
     <color name="text_contrast">#857C7C</color>
     <color name="black_400">#666060</color>
+    <color name="transparentBlack80">#CC000000</color>
+    <color name="icon_positive">#46DEA1</color>"
+
+    <color name="secondary_bg">#FFFFFF</color>
+    <color name="white_f5f5f5">#F5F5F5</color>
 </resources>

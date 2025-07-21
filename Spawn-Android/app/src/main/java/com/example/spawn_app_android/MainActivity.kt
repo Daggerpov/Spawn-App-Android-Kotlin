@@ -8,6 +8,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.spawn_app_android.presentation.navigation.AppRoot
+import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
 
 
 class MainActivity : ComponentActivity() {
@@ -18,7 +20,9 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            SpawnApp()
+            SpawnAppAndroidTheme {
+                AppRoot()
+            }
         }
     }
 }
@@ -29,5 +33,4 @@ class MainActivity : ComponentActivity() {
     name = "Dashboard")
 @Composable
 fun Preview() {
-    SpawnApp()
 }

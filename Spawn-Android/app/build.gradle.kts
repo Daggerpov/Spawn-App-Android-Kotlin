@@ -1,3 +1,13 @@
+import java.util.Properties
+
+val localProperties = Properties()
+val localFile = rootProject.file("local.properties")
+if (localFile.exists()) {
+    localProperties.load(localFile.inputStream())
+}
+
+val authWebClientID: String = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -18,6 +28,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+
+        buildConfigField("String", "WEB_CLIENT_ID", "\"$authWebClientID\"")
+
     }
 
     buildTypes {
@@ -38,6 +52,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -83,9 +98,18 @@ dependencies {
 
     // GSON
     implementation ("com.squareup.retrofit2:converter-gson:2.11.0")
-    implementation ("androidx.compose.ui:ui:1.8.2")
+    implementation ("androidx.compose.ui:ui:1.8.3")
     implementation ("androidx.compose.material3:material3:1.3.2")
-    implementation ("androidx.navigation:navigation-compose:2.9.0")
-    implementation("androidx.core:core-splashscreen:1.0.0")
+    implementation ("androidx.navigation:navigation-compose:2.9.1")
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation ("androidx.compose.foundation:foundation:1.8.3")
+
+    //region Sign in with Google
+    implementation ("androidx.credentials:credentials:1.5.0")
+    implementation ("androidx.credentials:credentials-play-services-auth:1.5.0")
+    implementation ("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation ("com.google.android.gms:play-services-auth:21.0.0")
+    //end region
+
 
 }

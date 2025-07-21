@@ -88,4 +88,8 @@ class HomeViewModel : ViewModel() {
             )
         )
     }
+
+    fun dummyActivity(): ActivityModel {
+        return _allActivities.value[0]
+    }
 }
