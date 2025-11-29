@@ -52,6 +52,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.domain.model.ActivityModel
 import com.example.spawn_app_android.presentation.screens.Utils.SetDarkStatusBarIcons
+import com.example.spawn_app_android.presentation.screens.components.ActivityBottomSheet
 import com.example.spawn_app_android.presentation.viewModels.HomeViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -286,58 +287,22 @@ fun ActivityCard(activity: ActivityModel) {
             )
         )
         //endregion
-
-        //region ACTIVITY BOTTOM SHEET
         if (showSheet) {
             val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-            LaunchedEffect(Unit) {
-                sheetState.show()
-            }
-
-            ModalBottomSheet(
-                onDismissRequest = {
-                    coroutineScope.launch {
-                        sheetState.hide()
-                        showSheet = false
-                    }
-                },
+            ActivityBottomSheet(
                 sheetState = sheetState,
-                containerColor = colorResource(R.color.activity_indigo)
-            ) {//region BOTTOM SHEET UI
-                Column(Modifier.padding(24.dp)) {
-                    Icon(
-                        modifier = Modifier
-                            .align(Alignment.Start),
-                        painter = painterResource(R.drawable.ic_expand),
-                        contentDescription = "expand",
-                        tint = Color.White
-                    )
-//region TITLE
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SpawnTitleTxt(content = activity.title, color = Color.White)
-//endregion
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SpawnBodyTxt(content = "${activity.status} • ${activity.time}", color = Color.White)
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SpawnButton(
-                        modifier = Modifier,
-                        content = "Spawn In!",
-                        txtColor = colorResource(R.color.activity_indigo),
-                        bgColor = Color.White)
-                }
-//                BottomSheetUI(coroutineScope, sheetState)
-                //endregion
-            }
+                coroutineScope = coroutineScope,
+                activity = activity,
+                onDismiss = { showSheet = false }
+            )
         }
-        //endregion
 
     }
 }
 
 @Composable
-private fun SpawnTitleTxt(
+fun SpawnTitleTxt(
     modifier: Modifier = Modifier,
     content: String,
     color: Color = Color.Black
@@ -355,7 +320,7 @@ private fun SpawnTitleTxt(
 }
 
 @Composable
-private fun SpawnBodyTxt(
+fun SpawnBodyTxt(
     modifier: Modifier = Modifier,
     content: String,
     color: Color = Color.Black
@@ -371,27 +336,6 @@ private fun SpawnBodyTxt(
         )
     )
 }
-
-@Composable
-private fun SpawnButton(modifier: Modifier = Modifier, content: String, txtColor: Color, bgColor: Color ) {
-        Button(
-            modifier = modifier,
-            onClick = { /* Handle click */ },
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = bgColor),
-        ) {
-            Text(
-                text = content,
-                color = txtColor,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-                fontSize = 17.sp,
-                fontFamily = MaterialTheme.typography.bodyLarge.fontFamily
-            )
-        }
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -426,4 +370,3 @@ private fun pickTagColor(activityStatus: String): Color {
 fun HomeScreenPreview() {
     HomeScreen()
 }
-
