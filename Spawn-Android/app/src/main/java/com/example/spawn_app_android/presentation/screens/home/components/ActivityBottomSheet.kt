@@ -1,4 +1,4 @@
-package com.example.spawn_app_android.presentation.screens.components
+package com.example.spawn_app_android.presentation.screens.home.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -35,10 +35,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.domain.model.ActivityModel
-import com.example.spawn_app_android.presentation.screens.SpawnBodyTxt
-import com.example.spawn_app_android.presentation.screens.SpawnTitleTxt
-import com.example.spawn_app_android.presentation.screens.components.ActivityBottomSheet.SPACING_16
-import com.example.spawn_app_android.presentation.screens.components.ActivityBottomSheet.SPAWN_IN_BUTTON_WIDTH
+import com.example.spawn_app_android.presentation.screens.home.SpawnBodyTxt
+import com.example.spawn_app_android.presentation.screens.home.SpawnTitleTxt
+import com.example.spawn_app_android.presentation.screens.home.components.ActivityBottomSheet.SPACING_16
+import com.example.spawn_app_android.presentation.screens.home.components.ActivityBottomSheet.SPAWN_IN_BUTTON_WIDTH
 import com.example.spawn_app_android.presentation.theme.spawnIndigo
 import com.example.spawn_app_android.presentation.theme.white
 import kotlinx.coroutines.CoroutineScope
