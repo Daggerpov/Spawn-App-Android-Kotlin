@@ -66,7 +66,14 @@ fun ActivityBottomSheet(
         sheetState = sheetState,
         containerColor = colorResource(R.color.activity_indigo)
     ) {
-        Column(Modifier.padding(24.dp)) {
+        Column(
+            Modifier.padding(
+                top = 0.dp,
+                start = 24.dp,
+                end = 24.dp,
+                bottom = 24.dp
+            )
+        ) {
             Icon(
                 modifier = Modifier
                     .align(Alignment.Start),
