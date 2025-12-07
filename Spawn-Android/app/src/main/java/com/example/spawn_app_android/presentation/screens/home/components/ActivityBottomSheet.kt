@@ -95,6 +95,15 @@ fun ActivityBottomSheet(
 
             Spacer(modifier = Modifier.height(SPACING_16))
 
+            MiniMapCard(
+                locationName = "Golden Gate Park, San Francisco",
+                latitude = 37.7694,
+                longitude = -122.4862,
+                onClick = {}
+            )
+
+            Spacer(modifier = Modifier.height(SPACING_16))
+
             ChatRoomIngress(
                 modifier = Modifier
                     .fillMaxWidth()
