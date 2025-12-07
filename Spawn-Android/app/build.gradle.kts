@@ -98,6 +98,10 @@ dependencies {
 
     // GSON
     implementation ("com.squareup.retrofit2:converter-gson:2.11.0")
+    
+    // OkHttp for interceptors (auth, logging)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation ("androidx.compose.ui:ui:1.8.3")
     implementation ("androidx.compose.material3:material3:1.3.2")
     implementation ("androidx.navigation:navigation-compose:2.9.1")
