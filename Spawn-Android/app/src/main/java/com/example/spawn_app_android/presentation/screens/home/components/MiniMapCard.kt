@@ -2,7 +2,10 @@ package com.example.spawn_app_android.presentation.screens.home.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,8 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -45,6 +52,7 @@ import com.mapbox.maps.extension.compose.MapboxMap
  * @param longitude The longitude coordinate of the event location
  * @param onClick Optional click handler for when the card is tapped
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MiniMapCard(
     modifier: Modifier = Modifier,
@@ -100,60 +108,98 @@ fun MiniMapCard(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_location_pin),
                     contentDescription = "Event location",
-                    modifier = Modifier.size(32.dp),
-                    tint = spawnIndigo
+                    modifier = Modifier.size(30.dp),
+                    tint = null
                 )
             }
             
             // Floating location info bar at bottom
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(8.dp)
+            MiniMapButtons(
+                locationName = locationName,
+                onClick = onClick
+            )
+        }
+    }
+}
+
+@Composable
+fun BoxScope.MiniMapButtons(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)?,
+    locationName: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .align(Alignment.BottomCenter)
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Location name row
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .background(
+                    color = backgroundSecondaryDark.copy(alpha = 0.9f),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .height(36.dp)
+                .padding(horizontal = 12.dp, vertical = 0.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_location),
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = spawnIndigo
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = locationName,
+                color = white,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        // View in Maps button
+        if (onClick != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Button(
+                onClick = onClick,
+                modifier = Modifier.height(36.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = spawnIndigo
+                ),
+                contentPadding = PaddingValues(
+                    horizontal = 12.dp,
+                    vertical = 0.dp
+                )
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = backgroundSecondaryDark.copy(alpha = 0.9f),
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_location),
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = spawnIndigo
-                    )
-                    
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    Text(
-                        text = locationName,
-                        color = white,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    
-                    // Directions hint icon
-                    if (onClick != null) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_chevron_right),
-                            contentDescription = "View directions",
-                            modifier = Modifier.size(18.dp),
-                            tint = white.copy(alpha = 0.6f)
-                        )
-                    }
-                }
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_direction_sign),
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = white
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "View in Maps",
+                    color = white,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
+
 }
 
 /**
