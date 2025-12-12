@@ -1,7 +1,5 @@
 package com.example.spawn_app_android.presentation.screens
 
-import android.graphics.drawable.Icon
-import android.media.Image
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
@@ -13,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.absoluteOffset
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -24,8 +21,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.SearchBar
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -41,22 +36,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.example.spawn_app_android.R
-import com.example.spawn_app_android.presentation.navigation.FriendsList
 import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
-import com.mapbox.maps.extension.style.expressions.dsl.generated.all
-import com.mapbox.maps.extension.style.expressions.dsl.generated.mod
-import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material3.MaterialTheme
 
 // preview

@@ -1,8 +1,7 @@
-package com.example.spawn_app_android.presentation.screens
+package com.example.spawn_app_android.presentation.screens.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,19 +18,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,6 +48,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.domain.model.ActivityModel
+import com.example.spawn_app_android.presentation.screens.HomeScreen
+import com.example.spawn_app_android.presentation.screens.Utils.SetDarkStatusBarIcons
+import com.example.spawn_app_android.presentation.screens.home.components.ActivityBottomSheet
 import com.example.spawn_app_android.presentation.viewModels.HomeViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -73,7 +71,8 @@ fun HomeScreenScrollable(viewModel: HomeViewModel = viewModel()) {
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
-    val activities by viewModel.filteredActivities.collectAsState()
+    SetDarkStatusBarIcons()
+//    val activities by viewModel.filteredActivities.collectAsState()
     val filters = listOf("Eat", "Gym", "Study", "Chill")
     Column(
         modifier = Modifier
@@ -103,7 +102,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             FilterRow(filters = filters, onFilterSelected = viewModel::setFilter)
 
             Spacer(modifier = Modifier.height(30.dp))
-            ActivitiesReel(activities)
+            ActivitiesReel(viewModel)
         }
     }
 }
@@ -121,7 +120,6 @@ fun FilterRow(filters: List<String>, onFilterSelected: (String?) -> Unit) {
         Text("Spawn in!", color = colorResource(R.color.text_contrast), fontSize = 16.sp)
         Text(
             "See All",
-            modifier = Modifier.clickable { onFilterSelected(null) },
             style = TextStyle(
                 fontSize = 12.sp,
 //                fontFamily = FontFamily(Font(R.font.onest)),
@@ -137,23 +135,21 @@ fun FilterRow(filters: List<String>, onFilterSelected: (String?) -> Unit) {
             .padding(top = 20.dp),
         horizontalArrangement = Arrangement.Center,
     ) {
-        ImageCard(R.drawable.ic_eat, "Eat", onFilterSelected = { onFilterSelected("EAT") })
-        ImageCard(R.drawable.ic_gym, "Gym", onFilterSelected = { onFilterSelected("GYM") })
-        ImageCard(R.drawable.ic_pencil, "Study", onFilterSelected = { onFilterSelected("STUDY") })
-        ImageCard(R.drawable.ic_chill, "Chill", onFilterSelected = { onFilterSelected("CHILL") })
+        ImageCard(R.drawable.ic_eat, "Eat")
+        ImageCard(R.drawable.ic_gym, "Gym")
+        ImageCard(R.drawable.ic_pencil, "Study")
+        ImageCard(R.drawable.ic_chill, "Chill")
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ImageCard(iconId: Int, caption: String, onFilterSelected: () -> Unit) {
+fun ImageCard(iconId: Int, caption: String) {
     Card(
         modifier = Modifier
             .wrapContentWidth()
             .padding(8.dp),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(8.dp),
-        onClick = onFilterSelected
+        elevation = CardDefaults.cardElevation(8.dp)
     ) {
         Column(
             modifier = Modifier
@@ -182,7 +178,9 @@ fun ImageCard(iconId: Int, caption: String, onFilterSelected: () -> Unit) {
 }
 
 @Composable
-fun ActivitiesReel(activities: List<ActivityModel>) {
+fun ActivitiesReel(viewModel: HomeViewModel) {
+    // will later be fetched using HomeViewModel
+    val activities = listOf<ActivityModel>()
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -204,7 +202,7 @@ fun ActivitiesReel(activities: List<ActivityModel>) {
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
-        items(activities) { activity ->
+        items(viewModel.getActivities()) { activity ->
             ActivityCard(activity)
         }
     }
@@ -287,58 +285,22 @@ fun ActivityCard(activity: ActivityModel) {
             )
         )
         //endregion
-
-        //region ACTIVITY BOTTOM SHEET
         if (showSheet) {
             val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-            LaunchedEffect(Unit) {
-                sheetState.show()
-            }
-
-            ModalBottomSheet(
-                onDismissRequest = {
-                    coroutineScope.launch {
-                        sheetState.hide()
-                        showSheet = false
-                    }
-                },
+            ActivityBottomSheet(
                 sheetState = sheetState,
-                containerColor = colorResource(R.color.activity_indigo)
-            ) {//region BOTTOM SHEET UI
-                Column(Modifier.padding(24.dp)) {
-                    Icon(
-                        modifier = Modifier
-                            .align(Alignment.Start),
-                        painter = painterResource(R.drawable.ic_expand),
-                        contentDescription = "expand",
-                        tint = Color.White
-                    )
-//region TITLE
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SpawnTitleTxt(content = activity.title, color = Color.White)
-//endregion
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SpawnBodyTxt(content = "${activity.status} • ${activity.time}", color = Color.White)
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SpawnButton(
-                        modifier = Modifier,
-                        content = "Spawn In!",
-                        txtColor = colorResource(R.color.activity_indigo),
-                        bgColor = Color.White)
-                }
-//                BottomSheetUI(coroutineScope, sheetState)
-                //endregion
-            }
+                coroutineScope = coroutineScope,
+                activity = activity,
+                onDismiss = { showSheet = false }
+            )
         }
-        //endregion
 
     }
 }
 
 @Composable
-private fun SpawnTitleTxt(
+fun SpawnTitleTxt(
     modifier: Modifier = Modifier,
     content: String,
     color: Color = Color.Black
@@ -356,7 +318,7 @@ private fun SpawnTitleTxt(
 }
 
 @Composable
-private fun SpawnBodyTxt(
+fun SpawnBodyTxt(
     modifier: Modifier = Modifier,
     content: String,
     color: Color = Color.Black
@@ -372,27 +334,6 @@ private fun SpawnBodyTxt(
         )
     )
 }
-
-@Composable
-private fun SpawnButton(modifier: Modifier = Modifier, content: String, txtColor: Color, bgColor: Color ) {
-        Button(
-            modifier = modifier,
-            onClick = { /* Handle click */ },
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = bgColor),
-        ) {
-            Text(
-                text = content,
-                color = txtColor,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-                fontSize = 17.sp,
-                fontFamily = MaterialTheme.typography.bodyLarge.fontFamily
-            )
-        }
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -427,4 +368,3 @@ private fun pickTagColor(activityStatus: String): Color {
 fun HomeScreenPreview() {
     HomeScreen()
 }
-
