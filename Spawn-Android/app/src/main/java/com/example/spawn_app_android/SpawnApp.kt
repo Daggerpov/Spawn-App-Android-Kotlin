@@ -12,6 +12,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.*
 import com.example.spawn_app_android.presentation.navigation.BottomNavItem
 import com.example.spawn_app_android.presentation.screens.*
+import com.example.spawn_app_android.presentation.screens.home.HomeScreen as HomeScreenImpl
 import com.example.spawn_app_android.presentation.screens.activities.ActivityRoutes
 import com.example.spawn_app_android.presentation.screens.activities.ActivityViewModel
 import com.example.spawn_app_android.presentation.screens.activities.createActivityNavGraph
@@ -89,7 +90,18 @@ fun SpawnApp(
                 )
             }
 
-            composable(BottomNavItem.Home.route) { HomeScreen() }
+            composable(BottomNavItem.Home.route) {
+                HomeScreenImpl(
+                    onQuickCreate = { activityType ->
+                        // Set the activity tag in the ViewModel
+                        activityViewModel.onEvent(
+                            com.example.spawn_app_android.presentation.screens.activities.CreateActivityEvent.TagChanged(activityType)
+                        )
+                        // Navigate directly to step 2 (skip type selection since it's already chosen)
+                        navController.navigate(ActivityRoutes.STEP2)
+                    }
+                )
+            }
             composable(BottomNavItem.Map.route) { MapPage() }
 
             navigation(
