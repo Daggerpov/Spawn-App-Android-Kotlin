@@ -2,6 +2,7 @@ package com.example.spawn_app_android.presentation.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,7 +53,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.domain.model.ActivityModel
-import com.example.spawn_app_android.presentation.screens.Utils.SetDarkStatusBarIcons
 import com.example.spawn_app_android.presentation.viewModels.HomeViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -72,8 +73,7 @@ fun HomeScreenScrollable(viewModel: HomeViewModel = viewModel()) {
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
-    SetDarkStatusBarIcons()
-//    val activities by viewModel.filteredActivities.collectAsState()
+    val activities by viewModel.filteredActivities.collectAsState()
     val filters = listOf("Eat", "Gym", "Study", "Chill")
     Column(
         modifier = Modifier
@@ -103,7 +103,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             FilterRow(filters = filters, onFilterSelected = viewModel::setFilter)
 
             Spacer(modifier = Modifier.height(30.dp))
-            ActivitiesReel(viewModel)
+            ActivitiesReel(activities)
         }
     }
 }
@@ -121,6 +121,7 @@ fun FilterRow(filters: List<String>, onFilterSelected: (String?) -> Unit) {
         Text("Spawn in!", color = colorResource(R.color.text_contrast), fontSize = 16.sp)
         Text(
             "See All",
+            modifier = Modifier.clickable { onFilterSelected(null) },
             style = TextStyle(
                 fontSize = 12.sp,
 //                fontFamily = FontFamily(Font(R.font.onest)),
@@ -136,21 +137,23 @@ fun FilterRow(filters: List<String>, onFilterSelected: (String?) -> Unit) {
             .padding(top = 20.dp),
         horizontalArrangement = Arrangement.Center,
     ) {
-        ImageCard(R.drawable.ic_eat, "Eat")
-        ImageCard(R.drawable.ic_gym, "Gym")
-        ImageCard(R.drawable.ic_pencil, "Study")
-        ImageCard(R.drawable.ic_chill, "Chill")
+        ImageCard(R.drawable.ic_eat, "Eat", onFilterSelected = { onFilterSelected("EAT") })
+        ImageCard(R.drawable.ic_gym, "Gym", onFilterSelected = { onFilterSelected("GYM") })
+        ImageCard(R.drawable.ic_pencil, "Study", onFilterSelected = { onFilterSelected("STUDY") })
+        ImageCard(R.drawable.ic_chill, "Chill", onFilterSelected = { onFilterSelected("CHILL") })
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ImageCard(iconId: Int, caption: String) {
+fun ImageCard(iconId: Int, caption: String, onFilterSelected: () -> Unit) {
     Card(
         modifier = Modifier
             .wrapContentWidth()
             .padding(8.dp),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(8.dp)
+        elevation = CardDefaults.cardElevation(8.dp),
+        onClick = onFilterSelected
     ) {
         Column(
             modifier = Modifier
@@ -179,9 +182,7 @@ fun ImageCard(iconId: Int, caption: String) {
 }
 
 @Composable
-fun ActivitiesReel(viewModel: HomeViewModel) {
-    // will later be fetched using HomeViewModel
-    val activities = listOf<ActivityModel>()
+fun ActivitiesReel(activities: List<ActivityModel>) {
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -203,7 +204,7 @@ fun ActivitiesReel(viewModel: HomeViewModel) {
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
-        items(viewModel.getActivities()) { activity ->
+        items(activities) { activity ->
             ActivityCard(activity)
         }
     }
