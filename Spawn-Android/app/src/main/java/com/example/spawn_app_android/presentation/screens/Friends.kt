@@ -1,6 +1,7 @@
 package com.example.spawn_app_android.presentation.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,11 +42,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.spawn_app_android.domain.model.Friend
 import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
-import com.example.spawn_app_android.presentation.theme.backgroundPrimaryDark
 import com.example.spawn_app_android.presentation.theme.spawnIndigo
+import com.example.spawn_app_android.presentation.theme.textPrimary
+import com.example.spawn_app_android.presentation.theme.textSecondary
 import com.example.spawn_app_android.presentation.theme.white
 
+/**
+ * Friends.kt
+ *
+ * Created by Ethan Dsouza on 2025-12-13
+ *
+ * Provides start to Friends Tab flow from the main app
+ */
+
 private val horizontalPadding = 26.dp
+
+enum class AddButtonState {
+    ADD,
+    PENDING,
+    ADDED
+}
+
+data class RecentUser(
+    val friend: Friend,
+    val addState: AddButtonState = AddButtonState.ADD
+)
 
 @Composable
 fun FriendsPage(
@@ -78,6 +99,14 @@ fun FriendsPage(
             friends = sampleFriends,
             onFriendOptionsClick = { /* Handle options click */ }
         )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Recently Spawned With Section
+        RecentlySpawnedWithSection(
+            recentUsers = sampleRecentUsers,
+            onAddClick = { /* Handle add click */ }
+        )
     }
 }
 
@@ -86,6 +115,12 @@ private val sampleFriends = listOf(
     Friend("Sarah", "Chen", "@sarahc"),
     Friend("Marcus", "Johnson", "@marcusj"),
     Friend("Emily", "Zhang", "@emilyzhang")
+)
+
+private val sampleRecentUsers = listOf(
+    RecentUser(Friend("Alex", "Kim", "@alexkim"), AddButtonState.ADD),
+    RecentUser(Friend("Jordan", "Smith", "@jordans"), AddButtonState.PENDING),
+    RecentUser(Friend("Taylor", "Brown", "@taylorbrown"), AddButtonState.ADDED)
 )
 
 @Composable
@@ -127,7 +162,12 @@ fun FriendsSearchBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = Color(0xFF3E3B3B),
+                color = Color.Transparent,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .border(
+                width = 1.dp,
+                brush = SolidColor(textPrimary),
                 shape = RoundedCornerShape(16.dp)
             )
             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -136,7 +176,7 @@ fun FriendsSearchBar(
         Icon(
             imageVector = Icons.Default.Search,
             contentDescription = "Search",
-            tint = Color.Gray,
+            tint = textPrimary,
             modifier = Modifier.size(20.dp)
         )
 
@@ -150,13 +190,13 @@ fun FriendsSearchBar(
                 color = white,
                 fontSize = 16.sp
             ),
-            cursorBrush = SolidColor(white),
+            cursorBrush = SolidColor(textPrimary),
             singleLine = true,
             decorationBox = { innerTextField ->
                 if (query.isEmpty()) {
                     Text(
                         text = "Search for friends...",
-                        color = Color.Gray,
+                        color = textPrimary,
                         fontSize = 16.sp
                     )
                 }
@@ -176,7 +216,7 @@ fun YourFriendsSection(
             text = "Your Friends",
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold,
-            color = white
+            color = textSecondary
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -229,12 +269,12 @@ fun FriendListItem(
                 text = "${friend.firstName} ${friend.lastName}",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
-                color = white
+                color = textSecondary
             )
             Text(
                 text = friend.username,
                 fontSize = 14.sp,
-                color = Color.Gray
+                color = textSecondary
             )
         }
 
@@ -250,14 +290,145 @@ fun FriendListItem(
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true, name = "Friends Page")
+@Composable
+fun RecentlySpawnedWithSection(
+    recentUsers: List<RecentUser>,
+    onAddClick: (RecentUser) -> Unit
+) {
+    Column {
+        Text(
+            text = "Recently Spawned With",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = textSecondary
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            recentUsers.forEach { recentUser ->
+                RecentlySpawnedItem(
+                    recentUser = recentUser,
+                    onAddClick = { onAddClick(recentUser) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RecentlySpawnedItem(
+    recentUser: RecentUser,
+    onAddClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Circular Profile Picture
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(Color(0xFF5A5A5A)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = "Profile Picture",
+                tint = Color.LightGray,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Name and Username
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = "${recentUser.friend.firstName} ${recentUser.friend.lastName}",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = textSecondary
+            )
+            Text(
+                text = recentUser.friend.username,
+                fontSize = 14.sp,
+                color = textSecondary
+            )
+        }
+
+        // Add Button
+        AddFriendButton(
+            state = recentUser.addState,
+            onClick = onAddClick
+        )
+    }
+}
+
+@Composable
+fun AddFriendButton(
+    state: AddButtonState,
+    onClick: () -> Unit
+) {
+    val text: String
+    val backgroundColor: Color
+    val textColor: Color
+    val isClickable: Boolean
+
+    when (state) {
+        AddButtonState.ADD -> {
+            text = "Add"
+            backgroundColor = spawnIndigo
+            textColor = white
+            isClickable = true
+        }
+        AddButtonState.PENDING -> {
+            text = "Pending"
+            backgroundColor = Color(0xFF3E3B3B)
+            textColor = Color.Gray
+            isClickable = false
+        }
+        AddButtonState.ADDED -> {
+            text = "Added"
+            backgroundColor = Color(0xFF2E7D32)
+            textColor = white
+            isClickable = false
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .background(
+                color = backgroundColor,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .then(
+                if (isClickable) Modifier.clickable { onClick() } else Modifier
+            )
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = textColor
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Friends Page")
 @Composable
 fun FriendsPagePreview() {
     SpawnAppAndroidTheme {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(backgroundPrimaryDark)
         ) {
             FriendsPage()
         }
