@@ -52,25 +52,33 @@ import com.example.spawn_app_android.presentation.screens.HomeScreen
 import com.example.spawn_app_android.presentation.screens.Utils.SetDarkStatusBarIcons
 import com.example.spawn_app_android.presentation.screens.home.components.ActivityBottomSheet
 import com.example.spawn_app_android.presentation.viewModels.HomeViewModel
+import com.example.spawn_app_android.presentation.screens.activities.ActivityViewModel
+import com.example.spawn_app_android.presentation.screens.activities.CreateActivityEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 
 @Composable
-fun HomeScreenScrollable(viewModel: HomeViewModel = viewModel()) {
+fun HomeScreenScrollable(
+    viewModel: HomeViewModel = viewModel(),
+    onQuickCreate: (String) -> Unit = {}
+) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
     ) {
         item {
-            HomeScreen(viewModel)
+            HomeScreen(viewModel, onQuickCreate)
         }
 
     }
 }
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
+fun HomeScreen(
+    viewModel: HomeViewModel = viewModel(),
+    onQuickCreate: (String) -> Unit = {}
+) {
     SetDarkStatusBarIcons()
 //    val activities by viewModel.filteredActivities.collectAsState()
     val filters = listOf("Eat", "Gym", "Study", "Chill")
@@ -99,7 +107,11 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             Text("Hey Daniel! 👋", style = MaterialTheme.typography.titleLarge)
 
             Spacer(modifier = Modifier.height(8.dp))
-            FilterRow(filters = filters, onFilterSelected = viewModel::setFilter)
+            FilterRow(
+                filters = filters,
+                onFilterSelected = viewModel::setFilter,
+                onQuickCreate = onQuickCreate
+            )
 
             Spacer(modifier = Modifier.height(30.dp))
             ActivitiesReel(viewModel)
@@ -109,15 +121,26 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
 
 
 @Composable
-fun FilterRow(filters: List<String>, onFilterSelected: (String?) -> Unit) {
+fun FilterRow(
+    filters: List<String>,
+    onFilterSelected: (String?) -> Unit,
+    onQuickCreate: (String) -> Unit = {}
+) {
 
     Row(
         modifier = Modifier
             .padding(top = 38.dp)
             .fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Spawn in!", color = colorResource(R.color.text_contrast), fontSize = 16.sp)
+        Text(
+            text = "Spawn in!",
+            color = colorResource(R.color.text_contrast),
+            style = MaterialTheme.typography.titleMedium,
+            fontSize = 16.sp
+        )
+
         Text(
             "See All",
             style = TextStyle(
@@ -131,25 +154,27 @@ fun FilterRow(filters: List<String>, onFilterSelected: (String?) -> Unit) {
 
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 20.dp),
-        horizontalArrangement = Arrangement.Center,
+            .padding(top = 20.dp)
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceAround,
     ) {
-        ImageCard(R.drawable.ic_eat, "Eat")
-        ImageCard(R.drawable.ic_gym, "Gym")
-        ImageCard(R.drawable.ic_pencil, "Study")
-        ImageCard(R.drawable.ic_chill, "Chill")
+        QuickCreateActivity(R.drawable.ic_eat, "Eat") { onQuickCreate("Eat") }
+        QuickCreateActivity(R.drawable.ic_gym, "Gym") { onQuickCreate("Gym") }
+        QuickCreateActivity(R.drawable.ic_pencil, "Study") { onQuickCreate("Study") }
+        QuickCreateActivity(R.drawable.ic_chill, "Chill") { onQuickCreate("Chill") }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ImageCard(iconId: Int, caption: String) {
+fun QuickCreateActivity(iconId: Int, caption: String, onClick: () -> Unit = {}) {
     Card(
         modifier = Modifier
             .wrapContentWidth()
             .padding(8.dp),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(8.dp)
+        elevation = CardDefaults.cardElevation(0.dp),
+        onClick = onClick
     ) {
         Column(
             modifier = Modifier
@@ -170,7 +195,7 @@ fun ImageCard(iconId: Int, caption: String) {
             Text(
                 text = caption,
                 style = MaterialTheme.typography.bodyLarge,
-                fontSize = 16.sp,
+                fontSize = 13.sp,
                 textAlign = TextAlign.Center
             )
         }
@@ -184,16 +209,20 @@ fun ActivitiesReel(viewModel: HomeViewModel) {
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
 
         Text(
-            "See what’s happening", style = MaterialTheme.typography.titleMedium,
+            "See what’s happening",
+            style = MaterialTheme.typography.titleMedium,
+            fontSize = 16.sp,
             color = colorResource(R.color.black_400)
         )
         Text(
-            "See all", style = MaterialTheme.typography.labelSmall,
-            fontSize = 12.sp,
+            "See all",
+            style = MaterialTheme.typography.labelSmall,
+            fontSize = 13.sp,
             color = colorResource(R.color.activity_indigo)
         )
     }
