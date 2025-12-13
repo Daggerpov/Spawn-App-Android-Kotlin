@@ -14,6 +14,9 @@ val white = Color(0xFFFFFFFF)
 val black = Color(0xFF000000)
 val transparentBlack80 = Color(0xCC000000)
 
+val textPrimary = Color(0xFF1B1B1B)
+val textSecondary = Color(0xFF262424)
+
 // Dark Theme
 val backgroundPrimaryDark = Color(0xFF1F1E1E)
 val backgroundSecondaryDark = Color(0xFF3E3B3B)
