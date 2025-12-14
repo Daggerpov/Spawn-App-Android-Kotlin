@@ -23,6 +23,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,12 +41,15 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.example.spawn_app_android.R
 import com.example.spawn_app_android.domain.model.Friend
 import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
 import com.example.spawn_app_android.presentation.theme.spawnIndigo
 import com.example.spawn_app_android.presentation.theme.textPrimary
+import com.example.spawn_app_android.presentation.theme.textRed
 import com.example.spawn_app_android.presentation.theme.textSecondary
 import com.example.spawn_app_android.presentation.theme.white
 
@@ -239,6 +245,8 @@ fun FriendListItem(
     friend: Friend,
     onOptionsClick: () -> Unit
 ) {
+    var optionsExpanded by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -279,14 +287,114 @@ fun FriendListItem(
         }
 
         // 3 Dots Menu
-        Icon(
-            imageVector = Icons.Default.MoreVert,
-            contentDescription = "Options",
-            tint = Color.Gray,
-            modifier = Modifier
-                .size(24.dp)
-                .clickable { onOptionsClick() }
-        )
+        Box {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "Options",
+                tint = Color.Gray,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { optionsExpanded = true }
+            )
+
+            DropdownMenu(
+                expanded = optionsExpanded,
+                onDismissRequest = { optionsExpanded = false },
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(text = "View Profile")
+                            Icon(
+                                modifier = Modifier.padding(start = 16.dp),
+                                painter = painterResource(R.drawable.ic_profile),
+                                contentDescription = null
+                            )
+                        }
+                    },
+                    onClick = {
+                        optionsExpanded = false
+                        onOptionsClick()
+                    }
+                )
+
+                HorizontalDivider()
+
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(text = "Share Profile")
+                            Spacer(modifier = Modifier.weight(1f))
+                            Icon(
+                                painter = painterResource(R.drawable.ic_share),
+                                contentDescription = null
+                            )
+                        }
+                    },
+                    onClick = {
+                        optionsExpanded = false
+                        onOptionsClick()
+                    }
+                )
+
+                HorizontalDivider()
+
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(text = "Report User", color = textRed)
+                            Spacer(modifier = Modifier.weight(1f))
+                            Icon(
+                                painter = painterResource(R.drawable.ic_report),
+                                contentDescription = null,
+                                tint = textRed
+                            )
+                        }
+                    },
+                    onClick = {
+                        optionsExpanded = false
+                        onOptionsClick()
+                    }
+                )
+
+                HorizontalDivider()
+
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(text = "Block User", color = textRed)
+                            Spacer(modifier = Modifier.weight(1f))
+                            Icon(
+                                painter = painterResource(R.drawable.ic_block),
+                                contentDescription = null,
+                                tint = textRed
+                            )
+                        }
+                    },
+                    onClick = {
+                        optionsExpanded = false
+                        onOptionsClick()
+                    }
+                )
+            }
+        }
     }
 }
 
