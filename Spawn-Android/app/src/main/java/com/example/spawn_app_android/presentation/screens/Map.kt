@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.example.spawn_app_android.R
 import com.example.spawn_app_android.presentation.navigation.EventMapToggle
 import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
+import com.example.spawn_app_android.presentation.screens.Utils.SetDarkStatusBarIcons
 import com.mapbox.geojson.Point
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
@@ -55,58 +56,42 @@ import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportS
 
 @Composable
 fun MapPage() {
+    SetDarkStatusBarIcons()
 
-    var chips = arrayOf("Late Night", "Evening", "Afternoon",
+    val chips = arrayOf("Late Night", "Evening", "Afternoon",
         "Next Hour", "Happening Now", "All Activities")
 
     SpawnAppAndroidTheme {
-        Column {
-            Box(
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    color = Color.White
+                )
+        ) {
+            MapboxMap(
+                Modifier.fillMaxSize(),
+                mapViewportState = rememberMapViewportState {
+                    setCameraOptions {
+                        zoom(2.0)
+                        center(Point.fromLngLat(-98.0, 39.5))
+                        pitch(0.0)
+                        bearing(0.0)
+                    }
+                },
+            )
+
+            Column (
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        color = Color(0xFFE7E7DD)
-                    )
-
+                    .fillMaxSize(),
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.Bottom
             ) {
-                MapContainer()
-                Column (
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.Bottom
-                ) {
-                    ChipGroup(chips, 5, false)
-                }
-
-            } // Box
-        } // Column
+                ChipGroup(chips, 5, false)
+            }
+        }
     }
 }
-
-@Composable
-fun MapContainer() {
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        MapboxMap(
-            Modifier.fillMaxSize(),
-            mapViewportState = rememberMapViewportState {
-                setCameraOptions {
-                    zoom(2.0)
-                    center(Point.fromLngLat(-98.0, 39.5))
-                    pitch(0.0)
-                    bearing(0.0)
-                }
-            },
-        )
-    }
-
-}
-
-
 
 @Composable
 fun ChipGroup(chips: Array<String>, selected: Int, expanded: Boolean) {
@@ -133,35 +118,11 @@ fun ChipGroup(chips: Array<String>, selected: Int, expanded: Boolean) {
                 }
             }
         }
-
-//        AnimatedVisibility(
-//            visible = true,
-//            enter = slideInVertically {
-//                with(density) { 40.dp.roundToPx() }
-//            } + expandVertically(
-//                expandFrom = Alignment.Bottom
-//            ) + fadeIn(
-//                initialAlpha = 0.3f
-//            ),
-//            exit = slideOutVertically() + shrinkVertically() + fadeOut()
-//        ) {
-//
-//            for (chip in chips) {
-//                if (chip == chips[selected]) {
-//                    Chip(chip, true);
-//                } else {
-//                    Chip(chip, false);
-//                }
-//            }
-//
-//        }
     }
 }
 
 @Composable
 fun Chip(text: String, selected: Boolean) {
-
-
     Box(
         modifier = Modifier
             .padding(12.dp, 0.dp, 12.dp, 12.dp)
@@ -200,37 +161,6 @@ fun Chip(text: String, selected: Boolean) {
         }
     }
 }
-
-// legacy friend button
-//@Composable
-//fun FriendButton() {
-//
-//    Box(
-//        modifier = Modifier
-//            .width(46.dp)
-//            .height(46.dp)
-//            .background(
-//                color = Color(0x00000000),
-//                shape = RoundedCornerShape(100)
-//            )
-//            .border(
-//                width = 1.dp,
-//                color = Color(0xFF1D3D3D),
-//                shape = CircleShape
-//            )
-//    ) {
-//        Image(
-//            painter = painterResource(id = R.drawable.friends_icon),
-//            contentDescription = null,
-//            colorFilter = ColorFilter.tint(Color(0xFF1D3D3D)),
-//            modifier = Modifier
-//                .align(Alignment.Center)
-//                .width(21.dp)
-//                .height(21.dp)
-//        )
-//    }
-//
-//}
 
 @Composable
 fun VerticalSpacer(height: Int) {
