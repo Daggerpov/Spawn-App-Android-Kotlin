@@ -47,6 +47,7 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.MaterialTheme
+import com.example.spawn_app_android.presentation.screens.Utils.getNotifBarPadding
 
 // preview
 @RequiresApi(Build.VERSION_CODES.O)
@@ -64,10 +65,11 @@ fun ProfilePage() {
         Column(
             modifier = Modifier
                 .padding(20.dp)
+                .padding(top = getNotifBarPadding())
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            VerticalSpacer(60)
+            VerticalSpacer(20)
             ProfileHead(image, name, tag)
             VerticalSpacer(20)
             ProfileButtons()

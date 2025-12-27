@@ -52,6 +52,7 @@ import com.example.spawn_app_android.presentation.theme.textPrimary
 import com.example.spawn_app_android.presentation.theme.textRed
 import com.example.spawn_app_android.presentation.theme.textSecondary
 import com.example.spawn_app_android.presentation.theme.white
+import com.example.spawn_app_android.presentation.screens.Utils.getNotifBarPadding
 
 /**
  * Friends.kt
@@ -84,6 +85,7 @@ fun FriendsPage(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = horizontalPadding)
+            .padding(top = getNotifBarPadding())
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 

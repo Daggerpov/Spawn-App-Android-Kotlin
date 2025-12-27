@@ -50,6 +50,7 @@ import com.example.spawn_app_android.R
 import com.example.spawn_app_android.domain.model.ActivityModel
 import com.example.spawn_app_android.presentation.screens.HomeScreen
 import com.example.spawn_app_android.presentation.screens.Utils.SetDarkStatusBarIcons
+import com.example.spawn_app_android.presentation.screens.Utils.getNotifBarPadding
 import com.example.spawn_app_android.presentation.screens.home.components.ActivityBottomSheet
 import com.example.spawn_app_android.presentation.viewModels.HomeViewModel
 import com.example.spawn_app_android.presentation.screens.activities.ActivityViewModel
@@ -85,7 +86,7 @@ fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 10.dp),
+            .padding(top = getNotifBarPadding() + 10.dp),
     ) {
         Image(
             modifier = Modifier
