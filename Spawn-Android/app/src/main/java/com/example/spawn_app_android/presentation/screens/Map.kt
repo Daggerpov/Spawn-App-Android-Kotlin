@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -139,7 +140,10 @@ fun MapPage() {
                             color = Color.White,
                             shape = RoundedCornerShape(12.dp)
                         )
-                        .clickable {
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
                             userLocation?.let { location ->
                                 mapViewportState.setCameraOptions(
                                     CameraOptions.Builder()
@@ -174,6 +178,8 @@ fun ChipGroup(chips: Array<String>, selected: Int, expanded: Boolean) {
     Box(
         modifier = Modifier
             .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
                 onClick = {isClicked = !isClicked},
             )
     ) {
