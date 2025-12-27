@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
+import androidx.compose.ui.res.painterResource
+import com.example.spawn_app_android.R
 import com.example.spawn_app_android.presentation.theme.SpawnAppAndroidTheme
 import com.example.spawn_app_android.presentation.screens.Utils.SetDarkStatusBarIcons
 import com.mapbox.geojson.Point
@@ -41,6 +45,7 @@ import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportS
 import com.mapbox.maps.plugin.PuckBearing
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
+import com.mapbox.maps.CameraOptions
 
 
 @Composable
@@ -78,6 +83,17 @@ fun MapPage() {
     val chips = arrayOf("Late Night", "Evening", "Afternoon",
         "Next Hour", "Happening Now", "All Activities")
 
+    val mapViewportState = rememberMapViewportState {
+        setCameraOptions {
+            zoom(13.0)
+            center(Point.fromLngLat(-123.2460, 49.2606)) // UBC Vancouver
+            pitch(0.0)
+            bearing(0.0)
+        }
+    }
+
+    var userLocation by remember { mutableStateOf<Point?>(null) }
+
     SpawnAppAndroidTheme {
         Box(
             modifier = Modifier
@@ -88,15 +104,9 @@ fun MapPage() {
         ) {
             MapboxMap(
                 Modifier.fillMaxSize(),
-                mapViewportState = rememberMapViewportState {
-                    setCameraOptions {
-                        zoom(13.0)
-                        center(Point.fromLngLat(-123.2460, 49.2606)) // UBC Vancouver
-                        pitch(0.0)
-                        bearing(0.0)
-                    }
-                },
+                mapViewportState = mapViewportState,
                 scaleBar = { },
+                compass = { },
             ) {
                 if (hasLocationPermission) {
                     MapEffect(Unit) { mapView ->
@@ -106,6 +116,9 @@ fun MapPage() {
                             puckBearingEnabled = true
                             puckBearing = PuckBearing.HEADING
                             locationPuck = createDefault2DPuck(withBearing = true)
+                        }
+                        mapView.location.addOnIndicatorPositionChangedListener { point ->
+                            userLocation = point
                         }
                     }
                 }
@@ -117,6 +130,35 @@ fun MapPage() {
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.Bottom
             ) {
+                // Center on location button
+                Box(
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .size(48.dp)
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clickable {
+                            userLocation?.let { location ->
+                                mapViewportState.setCameraOptions(
+                                    CameraOptions.Builder()
+                                        .center(location)
+                                        .zoom(12.0)
+                                        .build()
+                                )
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painterResource(R.drawable.ic_compass),
+                        contentDescription = "Center on my location",
+                        tint = Color(0xFF1D3D3D),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
                 ChipGroup(chips, 5, false)
             }
         }
