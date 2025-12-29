@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.spawn_app_android.R
+import com.example.spawn_app_android.presentation.screens.Utils.getNotifBarPadding
 import com.example.spawn_app_android.presentation.screens.activities.ActivityViewModel
 import com.example.spawn_app_android.presentation.screens.activities.CreateActivityEvent
 
@@ -39,7 +40,7 @@ fun ActivitiesScreen(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(10.dp)
+            .padding(top = getNotifBarPadding() + 10.dp)
     ) {
         Text(
             modifier = Modifier
@@ -56,21 +57,6 @@ fun ActivitiesScreen(
             text = stringResource(id = R.string.activity_edit),
             style = MaterialTheme.typography.labelMedium
         )
-        /*var state = activityViewModel.state
-        TextField(
-            value = state.title,
-            onValueChange = { activityViewModel.onEvent(CreateActivityEvent.TitleChanged(it)) }
-        )
-
-        Button(onClick = {
-            if (state.title.isNotBlank()) {
-                onNext()  // Navigate to step2
-            }
-        }) {
-            Text("Next")
-        }
-         */
-
     }
 }
 
