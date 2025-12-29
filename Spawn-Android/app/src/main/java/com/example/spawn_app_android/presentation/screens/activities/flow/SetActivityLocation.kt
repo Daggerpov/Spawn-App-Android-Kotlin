@@ -65,6 +65,9 @@ import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportS
 import com.mapbox.maps.plugin.PuckBearing
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
+import com.mapbox.geojson.BoundingBox
+import com.mapbox.search.discover.Discover
+import com.mapbox.search.discover.DiscoverQuery
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -123,10 +126,14 @@ fun SetActivityLocation(
     var userLocation by remember { mutableStateOf<Point?>(null) }
     var hasCenteredOnUser by remember { mutableStateOf(false) }
     var currentAddress by remember { mutableStateOf("Fetching location...") }
+    var nearbyPlaces by remember { mutableStateOf<List<LocationSuggestion>>(emptyList()) }
+
+    val discover = remember { Discover.create() }
 
     LaunchedEffect(userLocation) {
         userLocation?.let { point ->
             withContext(Dispatchers.IO) {
+                // Reverse geocode for current address
                 try {
                     val geocoder = Geocoder(context, Locale.getDefault())
                     @Suppress("DEPRECATION")
@@ -137,6 +144,33 @@ fun SetActivityLocation(
                     }
                 } catch (e: Exception) {
                     currentAddress = "Unable to fetch address"
+                }
+
+                // Fetch nearby popular places using Mapbox Discover
+                try {
+                    // Create a ~10km bounding box around the user's location
+                    val latOffset = 0.045 // ~5km in latitude
+                    val lngOffset = 0.055 // ~5km in longitude (varies by latitude)
+                    val region = BoundingBox.fromPoints(
+                        Point.fromLngLat(point.longitude() - lngOffset, point.latitude() - latOffset),
+                        Point.fromLngLat(point.longitude() + lngOffset, point.latitude() + latOffset)
+                    )
+                    val response = discover.search(
+                        query = DiscoverQuery.Category.COFFEE_SHOP_CAFE,
+                        region = region
+                    )
+                    response.onValue { results ->
+                        nearbyPlaces = results.take(5).map { result ->
+                            LocationSuggestion(
+                                name = result.name,
+                                address = result.address.formattedAddress ?: "Unknown address",
+                                point = result.coordinate,
+                                isCurrentLocation = false
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Handle error silently, keep empty list
                 }
             }
         }
@@ -207,6 +241,7 @@ fun SetActivityLocation(
                     activityViewModel = activityViewModel,
                     userLocation = userLocation,
                     currentAddress = currentAddress,
+                    nearbyPlaces = nearbyPlaces,
                     onLocationSelected = { suggestion ->
                         // Handle location selection
                     }
@@ -221,6 +256,7 @@ private fun SearchSection(
     activityViewModel: ActivityViewModel,
     userLocation: Point?,
     currentAddress: String,
+    nearbyPlaces: List<LocationSuggestion>,
     onLocationSelected: (LocationSuggestion) -> Unit
 ) {
     SearchBar(activityViewModel)
@@ -228,6 +264,7 @@ private fun SearchSection(
     SearchSuggestions(
         userLocation = userLocation,
         currentAddress = currentAddress,
+        nearbyPlaces = nearbyPlaces,
         onLocationSelected = onLocationSelected
     )
 }
@@ -236,23 +273,22 @@ private fun SearchSection(
 private fun SearchSuggestions(
     userLocation: Point?,
     currentAddress: String,
+    nearbyPlaces: List<LocationSuggestion>,
     onLocationSelected: (LocationSuggestion) -> Unit
 ) {
-    val suggestions = remember(userLocation, currentAddress) {
-        listOf(
-            LocationSuggestion(
-                name = "Current Location",
-                address = currentAddress,
-                point = userLocation,
-                isCurrentLocation = true
-            )
-        )
-    }
+    val currentLocationSuggestion = LocationSuggestion(
+        name = "Current Location",
+        address = currentAddress,
+        point = userLocation,
+        isCurrentLocation = true
+    )
+
+    val allSuggestions = listOf(currentLocationSuggestion) + nearbyPlaces
 
     LazyColumn(
         modifier = Modifier.padding(horizontal = 26.dp)
     ) {
-        items(suggestions) { suggestion ->
+        items(allSuggestions) { suggestion ->
             LocationSuggestionItem(
                 suggestion = suggestion,
                 onClick = { onLocationSelected(suggestion) }
