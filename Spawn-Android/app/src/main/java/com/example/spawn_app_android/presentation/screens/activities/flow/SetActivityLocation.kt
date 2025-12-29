@@ -1,8 +1,8 @@
 package com.example.spawn_app_android.presentation.screens.activities.flow
 
+import android.location.Geocoder
 import android.Manifest
 import android.content.pm.PackageManager
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -10,6 +10,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -43,8 +45,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -61,7 +65,10 @@ import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportS
 import com.mapbox.maps.plugin.PuckBearing
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,6 +122,25 @@ fun SetActivityLocation(
 
     var userLocation by remember { mutableStateOf<Point?>(null) }
     var hasCenteredOnUser by remember { mutableStateOf(false) }
+    var currentAddress by remember { mutableStateOf("Fetching location...") }
+
+    LaunchedEffect(userLocation) {
+        userLocation?.let { point ->
+            withContext(Dispatchers.IO) {
+                try {
+                    val geocoder = Geocoder(context, Locale.getDefault())
+                    @Suppress("DEPRECATION")
+                    val addresses = geocoder.getFromLocation(point.latitude(), point.longitude(), 1)
+                    if (!addresses.isNullOrEmpty()) {
+                        val address = addresses[0]
+                        currentAddress = address.getAddressLine(0) ?: "Unknown location"
+                    }
+                } catch (e: Exception) {
+                    currentAddress = "Unable to fetch address"
+                }
+            }
+        }
+    }
 
     // Trigger function from anywhere
     fun triggerBottomSheet() {
@@ -177,22 +203,104 @@ fun SetActivityLocation(
             ) {
                 HeaderBtmSheet(onBack)
                 Spacer(Modifier.height(23.dp))
-                SearchSection(activityViewModel)
+                SearchSection(
+                    activityViewModel = activityViewModel,
+                    userLocation = userLocation,
+                    currentAddress = currentAddress,
+                    onLocationSelected = { suggestion ->
+                        // Handle location selection
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun SearchSection(activityViewModel: ActivityViewModel) {
+private fun SearchSection(
+    activityViewModel: ActivityViewModel,
+    userLocation: Point?,
+    currentAddress: String,
+    onLocationSelected: (LocationSuggestion) -> Unit
+) {
     SearchBar(activityViewModel)
-    SearchSuggestions()
-
+    Spacer(Modifier.height(16.dp))
+    SearchSuggestions(
+        userLocation = userLocation,
+        currentAddress = currentAddress,
+        onLocationSelected = onLocationSelected
+    )
 }
 
 @Composable
-private fun SearchSuggestions() {
-    LazyColumn() {  }
+private fun SearchSuggestions(
+    userLocation: Point?,
+    currentAddress: String,
+    onLocationSelected: (LocationSuggestion) -> Unit
+) {
+    val suggestions = remember(userLocation, currentAddress) {
+        listOf(
+            LocationSuggestion(
+                name = "Current Location",
+                address = currentAddress,
+                point = userLocation,
+                isCurrentLocation = true
+            )
+        )
+    }
+
+    LazyColumn(
+        modifier = Modifier.padding(horizontal = 26.dp)
+    ) {
+        items(suggestions) { suggestion ->
+            LocationSuggestionItem(
+                suggestion = suggestion,
+                onClick = { onLocationSelected(suggestion) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun LocationSuggestionItem(
+    suggestion: LocationSuggestion,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val compassIcon = painterResource(R.drawable.ic_compass)
+        val locationIcon = painterResource(R.drawable.ic_location)
+        Icon(
+            painter = if (suggestion.isCurrentLocation) compassIcon else locationIcon,
+            contentDescription = null,
+            tint = Color.Black,
+            modifier = Modifier.size(24.dp)
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = suggestion.name,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Black
+            )
+            Text(
+                text = suggestion.address,
+                fontSize = 14.sp,
+                color = Color.Gray,
+                maxLines = 1
+            )
+        }
+    }
 }
 
 @Composable
