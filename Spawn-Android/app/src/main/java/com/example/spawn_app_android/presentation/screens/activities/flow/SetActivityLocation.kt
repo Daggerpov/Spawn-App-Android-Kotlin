@@ -3,6 +3,7 @@ package com.example.spawn_app_android.presentation.screens.activities.flow
 import android.location.Geocoder
 import android.Manifest
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -26,18 +27,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +57,7 @@ import com.example.spawn_app_android.presentation.screens.Utils.SetDarkStatusBar
 import com.example.spawn_app_android.presentation.screens.Utils.getNotifBarPadding
 import com.example.spawn_app_android.presentation.screens.activities.ActivityViewModel
 import com.example.spawn_app_android.presentation.screens.activities.CreateActivityEvent
+import com.example.spawn_app_android.presentation.screens.activities.flow.SetActivityLocationConstants.DEFAULT_PEEK_HEIGHT
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.extension.compose.MapEffect
@@ -69,7 +70,6 @@ import com.mapbox.geojson.BoundingBox
 import com.mapbox.search.discover.Discover
 import com.mapbox.search.discover.DiscoverQuery
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
@@ -83,9 +83,7 @@ fun SetActivityLocation(
     SetDarkStatusBarIcons()
 
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    var showSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val scaffoldState = rememberBottomSheetScaffoldState()
 
     var hasLocationPermission by remember {
         mutableStateOf(
@@ -144,6 +142,7 @@ fun SetActivityLocation(
                     }
                 } catch (e: Exception) {
                     currentAddress = "Unable to fetch address"
+                    Log.d("SetActivityLocation", "Failed to fetch address: ${e.localizedMessage}")
                 }
 
                 // Fetch nearby popular places using Mapbox Discover
@@ -171,82 +170,67 @@ fun SetActivityLocation(
                     }
                 } catch (e: Exception) {
                     // Handle error silently, keep empty list
+                    Log.d("SetActivityLocation", "Failed to fetch nearby places: ${e.localizedMessage}")
                 }
             }
         }
     }
 
-    // Trigger function from anywhere
-    fun triggerBottomSheet() {
-        showSheet = true
-    }
-
-    LaunchedEffect(Unit) {
-        triggerBottomSheet()
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(color = Color.White)
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        sheetContainerColor = colorResource(R.color.white),
+        sheetContent = {
+            HeaderBtmSheet(onBack)
+            Spacer(Modifier.height(23.dp))
+            SearchSection(
+                activityViewModel = activityViewModel,
+                userLocation = userLocation,
+                currentAddress = currentAddress,
+                nearbyPlaces = nearbyPlaces,
+                onLocationSelected = { suggestion ->
+                    // Handle location selection
+                }
+            )
+        },
+        sheetPeekHeight = DEFAULT_PEEK_HEIGHT
     ) {
-        MapboxMap(
-            Modifier.fillMaxSize(),
-            mapViewportState = mapViewportState,
-            scaleBar = { },
-            compass = { },
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(color = Color.White)
         ) {
-            if (hasLocationPermission) {
-                MapEffect(Unit) { mapView ->
-                    mapView.location.updateSettings {
-                        enabled = true
-                        pulsingEnabled = true
-                        puckBearingEnabled = true
-                        puckBearing = PuckBearing.HEADING
-                        locationPuck = createDefault2DPuck(withBearing = true)
-                    }
-                    mapView.location.addOnIndicatorPositionChangedListener { point ->
-                        userLocation = point
-                        if (!hasCenteredOnUser) {
-                            mapViewportState.setCameraOptions(
-                                CameraOptions.Builder()
-                                    .center(point)
-                                    .zoom(14.0)
-                                    .build()
-                            )
-                            hasCenteredOnUser = true
+            MapboxMap(
+                Modifier.fillMaxSize(),
+                mapViewportState = mapViewportState,
+                scaleBar = { },
+                compass = { },
+            ) {
+                if (hasLocationPermission) {
+                    MapEffect(Unit) { mapView ->
+                        mapView.location.updateSettings {
+                            enabled = true
+                            pulsingEnabled = true
+                            puckBearingEnabled = true
+                            puckBearing = PuckBearing.HEADING
+                            locationPuck = createDefault2DPuck(withBearing = true)
+                        }
+                        mapView.location.addOnIndicatorPositionChangedListener { point ->
+                            userLocation = point
+                            if (!hasCenteredOnUser) {
+                                mapViewportState.setCameraOptions(
+                                    CameraOptions.Builder()
+                                        .center(point)
+                                        .zoom(14.0)
+                                        .build()
+                                )
+                                hasCenteredOnUser = true
+                            }
                         }
                     }
                 }
             }
-        }
 
-        HeaderMain(onBack = onBack)
-
-        if (showSheet) {
-            ModalBottomSheet(
-                onDismissRequest = {
-                    coroutineScope.launch {
-                        sheetState.hide()
-                        showSheet = false
-                    }
-                },
-                sheetState = sheetState,
-                containerColor = colorResource(R.color.white),
-                scrimColor = Color.Transparent
-            ) {
-                HeaderBtmSheet(onBack)
-                Spacer(Modifier.height(23.dp))
-                SearchSection(
-                    activityViewModel = activityViewModel,
-                    userLocation = userLocation,
-                    currentAddress = currentAddress,
-                    nearbyPlaces = nearbyPlaces,
-                    onLocationSelected = { suggestion ->
-                        // Handle location selection
-                    }
-                )
-            }
+            HeaderMain(onBack = onBack)
         }
     }
 }
@@ -433,4 +417,8 @@ private fun HeaderMain(onBack: () -> Unit) {
             )
         }
     }
+}
+
+object SetActivityLocationConstants {
+    val DEFAULT_PEEK_HEIGHT = 300.dp
 }
