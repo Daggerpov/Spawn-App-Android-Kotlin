@@ -5,6 +5,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.example.spawn_app_android.presentation.screens.activities.flow.ActivitiesScreen
+import com.example.spawn_app_android.presentation.screens.activities.flow.ConfirmActivityScreen
 import com.example.spawn_app_android.presentation.screens.activities.flow.SetActivityLocation
 import com.example.spawn_app_android.presentation.screens.activities.flow.SetActivityTimeScreen
 
@@ -22,7 +23,7 @@ fun NavGraphBuilder.createActivityNavGraph(
     composable(ActivityRoutes.STEP1) {
 //        val viewModel: ActivityViewModel = hiltViewModel()
         ActivitiesScreen(
-            onNext = { navController.navigate("step2") }, activityViewModel = activityViewModel
+            onNext = { navController.navigate(ActivityRoutes.STEP2) }, activityViewModel = activityViewModel
         )
     }
 
@@ -33,8 +34,14 @@ fun NavGraphBuilder.createActivityNavGraph(
     }
     composable(ActivityRoutes.STEP3) {
         SetActivityLocation(activityViewModel = activityViewModel,
-            onNext = { navController.navigate("step4") },
+            onNext = { navController.navigate(ActivityRoutes.STEP4) },
             onBack = { navController.popBackStack() })
     }
-    composable(ActivityRoutes.STEP4) { /* final submit + summary */ }
+    composable(ActivityRoutes.STEP4) {
+        ConfirmActivityScreen(
+            activityViewModel = activityViewModel,
+            onConfirm = { navController.navigate(ActivityRoutes.STEP1) },
+            onBack = { navController.popBackStack() }
+        )
+    }
 }
