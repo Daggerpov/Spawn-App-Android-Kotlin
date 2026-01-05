@@ -188,7 +188,7 @@ fun SetActivityLocation(
                 currentAddress = currentAddress,
                 nearbyPlaces = nearbyPlaces,
                 onLocationSelected = { suggestion ->
-                    // Handle location selection
+                    onNext()
                 }
             )
         },
