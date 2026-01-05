@@ -40,7 +40,7 @@ fun ActivitiesScreen(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = getNotifBarPadding() + 10.dp)
+            .padding(top = getNotifBarPadding() + 35.dp)
     ) {
         Text(
             modifier = Modifier
