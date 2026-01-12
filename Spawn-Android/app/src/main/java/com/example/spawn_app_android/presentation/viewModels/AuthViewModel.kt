@@ -62,14 +62,20 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    fun signInWithGoogle(context: Context, idToken: String, email: String?) {
+    fun signInWithGoogle(
+        context: Context,
+        idToken: String,
+        email: String?,
+        displayName: String? = null,
+        profilePictureUrl: String? = null
+    ) {
         initialize(context)
         viewModelScope.launch {
             val repo = authRepository ?: return@launch
 
             _authState.value = AuthState.Loading
 
-            when (val result = repo.signInWithGoogle(idToken, email)) {
+            when (val result = repo.signInWithGoogle(idToken, email, displayName, profilePictureUrl)) {
                 is AuthResult.Success -> {
                     handleAuthSuccess(result.data)
                 }

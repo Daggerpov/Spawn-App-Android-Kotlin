@@ -142,7 +142,9 @@ fun LoginPage(
                                     authViewModel.signInWithGoogle(
                                         context = context,
                                         idToken = outcome.result.idToken,
-                                        email = outcome.result.email
+                                        email = outcome.result.email,
+                                        displayName = outcome.result.displayName,
+                                        profilePictureUrl = outcome.result.profilePictureUrl
                                     )
                                 }
                                 is GoogleSignInOutcome.Error -> {

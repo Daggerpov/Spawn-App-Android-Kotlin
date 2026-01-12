@@ -9,7 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    private const val BASE_URL = "https://spawn.danielagapov.com/"
+    private const val BASE_URL = "https://spawn-app-back-end-production.up.railway.app/api/v1/"
 
     @Volatile
     private var retrofitInstance: Retrofit? = null
@@ -33,7 +33,7 @@ object ApiClient {
         val tokenManager = TokenManager.getInstance(context)
 
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.HEADERS
+            level = HttpLoggingInterceptor.Level.BODY
         }
 
         val okHttpClient = OkHttpClient.Builder()
