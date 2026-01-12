@@ -205,7 +205,7 @@ private fun LoginOptionButton(
         modifier = Modifier
             .fillMaxWidth()
             .background(colorResource(R.color.white))
-            .padding(horizontal = 32.dp),
+            .padding(horizontal = 30.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = colorResource(R.color.white_f5f5f5),
             disabledContainerColor = colorResource(R.color.white_f5f5f5).copy(alpha = 0.5f)

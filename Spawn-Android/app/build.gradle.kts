@@ -77,9 +77,9 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // mapbox -> daniel z
-    implementation("com.mapbox.maps:android:11.10.2")
-    implementation("com.mapbox.extension:maps-compose:11.10.2")
-    implementation("com.mapbox.search:discover:2.7.0")
+    implementation("com.mapbox.maps:android:11.11.1")
+    implementation("com.mapbox.extension:maps-compose:11.11.1")
+    implementation("com.mapbox.search:discover:2.9.0")
 
     // navigation -> daniel z
 
