@@ -112,5 +112,11 @@ dependencies {
     implementation ("com.google.android.gms:play-services-auth:21.0.0")
     //end region
 
+    // Encrypted SharedPreferences for secure token storage
+    implementation ("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // OkHttp for interceptors
+    implementation ("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
 }

@@ -38,7 +38,7 @@ fun SpawnApp(
 
     val authViewModel: AuthViewModel = viewModel()
     val activityViewModel: ActivityViewModel = viewModel()
-    val isLoggedIn by authViewModel._isLoggedIn.collectAsState()
+//    val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
 
 
     Scaffold(
