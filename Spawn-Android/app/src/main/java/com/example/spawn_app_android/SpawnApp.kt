@@ -19,7 +19,9 @@ import com.example.spawn_app_android.presentation.screens.home.HomeScreen as Hom
 import com.example.spawn_app_android.presentation.screens.activities.ActivityRoutes
 import com.example.spawn_app_android.presentation.screens.activities.ActivityViewModel
 import com.example.spawn_app_android.presentation.screens.activities.createActivityNavGraph
+import com.example.spawn_app_android.presentation.screens.authFlow.AccountNotFoundScreen
 import com.example.spawn_app_android.presentation.screens.authFlow.LoginPage
+import com.example.spawn_app_android.presentation.screens.authFlow.UserInfoInputScreen
 import com.example.spawn_app_android.presentation.viewModels.AuthViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -90,11 +92,52 @@ fun SpawnApp(
             composable("login") {
                 LoginPage(
                     onLoginSuccess = {
-                        navController.navigate("main") {
-                            popUpTo("login") { inclusive = true } // removes login from backstack
+                        navController.navigate(BottomNavItem.Home.route) {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    },
+                    onNeedsOnboarding = {
+                        navController.navigate("onboarding") {
+                            popUpTo("login") { inclusive = false }
+                        }
+                    },
+                    onUserNotFound = {
+                        navController.navigate("accountNotFound") {
+                            popUpTo("login") { inclusive = false }
                         }
                     },
                     authViewModel = authViewModel
+                )
+            }
+
+            composable("accountNotFound") {
+                AccountNotFoundScreen(
+                    onRegisterNow = {
+                        authViewModel.proceedToOnboarding()
+                        navController.navigate("onboarding") {
+                            popUpTo("accountNotFound") { inclusive = true }
+                        }
+                    },
+                    onReturnToLogin = {
+                        authViewModel.returnToLogin()
+                        navController.navigate("login") {
+                            popUpTo("accountNotFound") { inclusive = true }
+                        }
+                    }
+                )
+            }
+            
+            composable("onboarding") {
+                UserInfoInputScreen(
+                    authViewModel = authViewModel,
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onComplete = {
+                        navController.navigate(BottomNavItem.Home.route) {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    }
                 )
             }
 

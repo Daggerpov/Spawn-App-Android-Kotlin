@@ -11,7 +11,8 @@ class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
         "auth/register/oauth",
         "auth/register/verification/check",
         "auth/sign-in",
-        "auth/login"
+        "auth/login",
+        "auth/make-user"
     )
 
     override fun intercept(chain: Interceptor.Chain): Response {

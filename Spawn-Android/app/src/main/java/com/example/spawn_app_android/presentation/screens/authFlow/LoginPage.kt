@@ -54,6 +54,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginPage(
     onLoginSuccess: () -> Unit,
+    onNeedsOnboarding: () -> Unit,
+    onUserNotFound: () -> Unit,
     authViewModel: AuthViewModel
 ) {
     SetDarkStatusBarIcons()
@@ -74,6 +76,12 @@ fun LoginPage(
         when (authState) {
             is AuthState.Authenticated -> {
                 onLoginSuccess()
+            }
+            is AuthState.NeedsOnboarding -> {
+                onNeedsOnboarding()
+            }
+            is AuthState.UserNotFound -> {
+                onUserNotFound()
             }
             is AuthState.Error -> {
                 errorMessage = (authState as AuthState.Error).message

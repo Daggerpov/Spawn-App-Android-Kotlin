@@ -8,6 +8,7 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.NoCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import java.security.MessageDigest
@@ -47,16 +48,21 @@ suspend fun getGoogleCredential(context: Context, webClientId: String): GoogleSi
 
     val credentialManager = CredentialManager.create(activityContext)
 
-    // Use GetGoogleIdOption to show the bottom sheet account picker
+    // Use GetGoogleIdOption to show existing accounts on device
     val googleIdOption = GetGoogleIdOption.Builder()
         .setFilterByAuthorizedAccounts(false)
         .setServerClientId(webClientId)
         .setAutoSelectEnabled(false)
-        .setNonce(generateNonce())
+        .build()
+
+    // Use GetSignInWithGoogleOption to show a "Sign in with Google" button
+    // This allows users to add a new account or use a different one
+    val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(webClientId)
         .build()
 
     val request = GetCredentialRequest.Builder()
         .addCredentialOption(googleIdOption)
+        .addCredentialOption(signInWithGoogleOption)
         .build()
 
     return try {

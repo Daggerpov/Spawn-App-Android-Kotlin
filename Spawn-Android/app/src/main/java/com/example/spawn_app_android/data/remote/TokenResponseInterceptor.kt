@@ -13,7 +13,8 @@ class TokenResponseInterceptor(private val tokenManager: TokenManager) : Interce
         "auth/register/oauth",
         "auth/register/verification/check",
         "auth/user/details",
-        "auth/quick-sign-in"
+        "auth/quick-sign-in",
+        "auth/make-user"
     )
 
     override fun intercept(chain: Interceptor.Chain): Response {
