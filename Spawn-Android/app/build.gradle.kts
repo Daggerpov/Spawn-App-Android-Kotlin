@@ -1,18 +1,8 @@
-import java.util.Properties
-
-val localProperties = Properties()
-val localFile = rootProject.file("local.properties")
-if (localFile.exists()) {
-    localProperties.load(localFile.inputStream())
-}
-
-val authWebClientID: String = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
     kotlin("plugin.serialization") version "2.0.21"
 }
 
@@ -28,9 +18,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-
-        buildConfigField("String", "WEB_CLIENT_ID", "\"$authWebClientID\"")
 
     }
 
@@ -56,6 +43,21 @@ android {
     }
 }
 
+secrets {
+    // Optionally specify a different file name containing your secrets.
+    // The plugin defaults to "local.properties"
+    propertiesFileName = "secrets.properties"
+
+    // A properties file containing default secret values. This file can be
+    // checked in version control.
+    defaultPropertiesFileName = "secrets.defaults.properties"
+
+    // Configure which keys should be ignored by the plugin by providing regular expressions.
+    // "sdk.dir" is ignored by default.
+    ignoreList.add("keyToIgnore")
+    ignoreList.add("sdk.*")
+}
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -66,6 +68,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.volley)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -75,9 +78,9 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // mapbox -> daniel z
-    implementation("com.mapbox.maps:android:11.10.2")
-    implementation("com.mapbox.extension:maps-compose:11.10.2")
-    implementation("com.mapbox.search:discover:2.7.0")
+    implementation("com.mapbox.maps:android:11.11.1")
+    implementation("com.mapbox.extension:maps-compose:11.11.1")
+    implementation("com.mapbox.search:discover:2.9.0")
 
     // navigation -> daniel z
 
@@ -112,5 +115,14 @@ dependencies {
     implementation ("com.google.android.gms:play-services-auth:21.0.0")
     //end region
 
+    // Encrypted SharedPreferences for secure token storage
+    implementation ("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // OkHttp for interceptors
+    implementation ("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // Coil for image loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
 
 }
