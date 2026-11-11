@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="Theme.Spawn" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
 
-    <style name="Theme.SpawnAppAndroid" parent="android:Theme.Material.Light.NoActionBar" />
-    <style name="Theme.SpawnAppSplash" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="android:windowSplashScreenBackground">@color/activity_indigo</item>
-        <item name="android:windowSplashScreenAnimationDuration">1000</item>
+    <style name="Theme.Spawn.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/spawn_indigo</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Spawn</item>
     </style>
 </resources>

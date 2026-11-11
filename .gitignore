@@ -57,3 +57,8 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+### Android ###
+!Spawn-Android/gradle/wrapper/gradle-wrapper.jar
+Spawn-Android/keystore.properties
+*.jks
+*.keystore
