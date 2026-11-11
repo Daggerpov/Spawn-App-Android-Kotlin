@@ -13,6 +13,7 @@ import com.danielagapov.spawn.core.session.Spawn
 import com.danielagapov.spawn.core.util.ActivityStatus
 import com.danielagapov.spawn.core.util.Dates
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -47,10 +48,13 @@ class HomeViewModel : ViewModel() {
         if (!silent) loading = true
         viewModelScope.launch {
             try {
-                val feed = async { Spawn.api.feedActivities(uid).bodyOrThrow() }
-                val types = async { runCatching { Spawn.api.activityTypes(uid).bodyOrThrow() }.getOrNull() }
-                activities = sortFeed(feed.await())
-                types.await()?.let { activityTypes = sortTypes(it) }
+                // coroutineScope so a failed feed request lands in the catch below instead of crashing the app
+                coroutineScope {
+                    val feed = async { Spawn.api.feedActivities(uid).bodyOrThrow() }
+                    val types = async { runCatching { Spawn.api.activityTypes(uid).bodyOrThrow() }.getOrNull() }
+                    activities = sortFeed(feed.await())
+                    types.await()?.let { activityTypes = sortTypes(it) }
+                }
                 error = null
             } catch (e: Exception) {
                 error = e.friendlyMessage()
