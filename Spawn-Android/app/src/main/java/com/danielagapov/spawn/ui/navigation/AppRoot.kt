@@ -23,7 +23,6 @@ import com.danielagapov.spawn.core.session.AuthState
 import com.danielagapov.spawn.core.session.Spawn
 import com.danielagapov.spawn.core.util.UserLocation
 import com.danielagapov.spawn.presentation.screens.MapPage
-import com.danielagapov.spawn.presentation.screens.ProfilePage
 import com.danielagapov.spawn.ui.create.CreateActivityFlow
 import com.danielagapov.spawn.ui.create.CreateActivityViewModel
 import com.danielagapov.spawn.ui.activity.ActivityDetailSheet
@@ -32,6 +31,7 @@ import com.danielagapov.spawn.ui.home.HomeScreen
 import com.danielagapov.spawn.ui.home.HomeViewModel
 import com.danielagapov.spawn.ui.friends.FriendsTab
 import com.danielagapov.spawn.ui.friends.FriendsViewModel
+import com.danielagapov.spawn.ui.profile.MyProfileTab
 import com.danielagapov.spawn.ui.profile.UserProfileScreen
 import com.danielagapov.spawn.ui.theme.SpawnTheme
 
@@ -123,7 +123,7 @@ private fun MainScaffold(user: BaseUserDTO) {
             Tab.Map -> Box(Modifier.fillMaxSize().padding(bottom = bottomPad)) { MapPage() }
             Tab.Activities -> CreateActivityFlow(createVm, onDone = { tab = Tab.Home }, bottomPadding = bottomPad)
             Tab.Friends -> FriendsTab(friendsVm, onOpenProfile = openProfile, bottomPadding = bottomPad)
-            Tab.Profile -> Box(Modifier.fillMaxSize().padding(bottom = bottomPad)) { ProfilePage() }
+            Tab.Profile -> MyProfileTab(user, onOpenActivity = { openActivity = it }, bottomPadding = bottomPad)
         }
         profileTarget?.let { p ->
             UserProfileScreen(p, onBack = { profileTarget = null; friendsVm.load() }, onOpenActivity = { openActivity = it }, bottomPadding = bottomPad)

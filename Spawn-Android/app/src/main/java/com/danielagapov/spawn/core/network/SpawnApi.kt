@@ -67,6 +67,9 @@ interface SpawnApi {
     @POST("users/{id}/interests")
     suspend fun addInterest(@Path("id") id: String, @Body interest: RequestBody): Response<ResponseBody>
 
+    @PUT("users/{id}/interests")
+    suspend fun setInterests(@Path("id") id: String, @Body interests: List<String>): Response<ResponseBody>
+
     @DELETE("users/{id}/interests/{interest}")
     suspend fun removeInterest(@Path("id") id: String, @Path("interest") interest: String): Response<ResponseBody>
 
