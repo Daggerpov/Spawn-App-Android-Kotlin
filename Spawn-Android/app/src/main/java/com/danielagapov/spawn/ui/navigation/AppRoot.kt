@@ -22,7 +22,7 @@ import com.danielagapov.spawn.core.model.UserStatus
 import com.danielagapov.spawn.core.session.AuthState
 import com.danielagapov.spawn.core.session.Spawn
 import com.danielagapov.spawn.core.util.UserLocation
-import com.danielagapov.spawn.presentation.screens.MapPage
+import com.danielagapov.spawn.ui.map.MapTab
 import com.danielagapov.spawn.ui.create.CreateActivityFlow
 import com.danielagapov.spawn.ui.create.CreateActivityViewModel
 import com.danielagapov.spawn.ui.activity.ActivityDetailSheet
@@ -120,7 +120,7 @@ private fun MainScaffold(user: BaseUserDTO) {
                 onSeeAllActivities = { tab = Tab.Map },
                 bottomPadding = bottomPad,
             )
-            Tab.Map -> Box(Modifier.fillMaxSize().padding(bottom = bottomPad)) { MapPage() }
+            Tab.Map -> MapTab(homeVm.activities, onOpenActivity = { openActivity = it }, bottomPadding = bottomPad)
             Tab.Activities -> CreateActivityFlow(createVm, onDone = { tab = Tab.Home }, bottomPadding = bottomPad)
             Tab.Friends -> FriendsTab(friendsVm, onOpenProfile = openProfile, bottomPadding = bottomPad)
             Tab.Profile -> MyProfileTab(user, onOpenActivity = { openActivity = it }, bottomPadding = bottomPad)
