@@ -90,6 +90,16 @@ object Spawn {
         _feedVersion.value = _feedVersion.value + 1
     }
 
+    /** A getspawn.com link the app was opened with; MainScaffold opens it once you're signed in. */
+    private val _pendingLink = MutableStateFlow<DeepLink?>(null)
+    val pendingLink: StateFlow<DeepLink?> = _pendingLink.asStateFlow()
+
+    fun handleLink(uri: android.net.Uri?) {
+        DeepLink.parse(uri)?.let { _pendingLink.value = it }
+    }
+
+    fun consumeLink() { _pendingLink.value = null }
+
     fun signOutLocally() {
         tokens.clear()
         _auth.value = AuthState.SignedOut
@@ -101,4 +111,27 @@ object Spawn {
         } else {
             AuthState.Onboarding(r.user, r.status)
         }
+}
+
+/** https://getspawn.com/activity/{id or share code} and /profile/{id or share code} (iOS DeepLinkManager). */
+sealed interface DeepLink {
+    val key: String
+
+    data class Activity(override val key: String) : DeepLink
+    data class Profile(override val key: String) : DeepLink
+
+    companion object {
+        private val uuid = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+        fun isUuid(s: String) = uuid.matches(s)
+
+        fun parse(uri: android.net.Uri?): DeepLink? {
+            val segs = uri?.pathSegments?.filter { it.isNotBlank() } ?: return null
+            if (segs.size < 2) return null
+            return when (segs[0]) {
+                "activity" -> Activity(segs[1])
+                "profile" -> Profile(segs[1])
+                else -> null
+            }
+        }
+    }
 }

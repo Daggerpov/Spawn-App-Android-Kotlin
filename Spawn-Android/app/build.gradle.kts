@@ -75,6 +75,16 @@ android {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
+        // Release code (R8-minified) pointed at your local backend and signed with the debug key, to catch
+        // R8 problems before uploading: ./gradlew installMinifiedLocal
+        create("minifiedLocal") {
+            initWith(getByName("release"))
+            val localApi = localProperties.getProperty("API_BASE_URL") ?: prodApiBaseUrl
+            buildConfigField("String", "API_BASE_URL", "\"$localApi\"")
+            signingConfig = signingConfigs.getByName("debug")
+            applicationIdSuffix = ".minified"
+            matchingFallbacks += listOf("release")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

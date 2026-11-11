@@ -1,5 +1,6 @@
 package com.danielagapov.spawn
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,6 +14,11 @@ import com.danielagapov.spawn.ui.theme.SpawnTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        Spawn.handleLink(intent.data)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -20,6 +26,7 @@ class MainActivity : ComponentActivity() {
         if (Spawn.auth.value == AuthState.Loading) {
             lifecycleScope.launch { Spawn.restoreSession() }
         }
+        if (savedInstanceState == null) Spawn.handleLink(intent?.data)
         enableEdgeToEdge()
         setContent {
             SpawnTheme {

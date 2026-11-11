@@ -202,4 +202,12 @@ interface SpawnApi {
     @POST("notifications/device-tokens")
     suspend fun registerDeviceToken(@Body body: DeviceTokenDTO): Response<ResponseBody>
     // endregion
+
+    // region Share links (getspawn.com/activity/{code}, /profile/{code})
+    @GET("share/activity/{code}")
+    suspend fun resolveActivityShareCode(@Path("code") code: String): Response<IdDTO>
+
+    @GET("share/profile/{code}")
+    suspend fun resolveProfileShareCode(@Path("code") code: String): Response<IdDTO>
+    // endregion
 }
