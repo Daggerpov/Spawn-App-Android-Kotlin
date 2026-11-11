@@ -6,6 +6,25 @@
 - [Entity Relationship Diagram](#entity-relationship-diagram)
 - [General Links](#general-links)
 
+# Running it
+
+You need Android Studio (or just the Android SDK) and JDK 17.
+
+```bash
+cd Spawn-Android
+./gradlew installDebug        # builds and installs on a running emulator/device
+```
+
+Debug builds talk to production by default. To use a backend on your machine, add this to `Spawn-Android/local.properties`:
+
+```
+API_BASE_URL=http://10.0.2.2:8080/api/v1/
+```
+
+(`10.0.2.2` is your computer as seen from the emulator.) `tools/seed_local_backend.py` fills a local backend with test users, friends, activities and chats.
+
+Google sign-in needs `WEB_CLIENT_ID=<web OAuth client id>` in `local.properties` (the backend must accept that client ID too).
+
 # General Links
 - [Back-end Repo](https://github.com/Daggerpov/Spawn-App-Back-End)
 - [Jetpack Compose MVVM playlist](https://youtube.com/playlist?list=PLzZEuVaFb9Exi-pc8qtHBrrLg8bUn-TP6&si=DQWrtxvFNACAxyBk)
