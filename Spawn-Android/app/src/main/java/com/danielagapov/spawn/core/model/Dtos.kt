@@ -293,7 +293,15 @@ data class UserSocialMediaDTO(
     val instagramLink: String? = null,
     val whatsappNumber: String? = null,
     val instagramUsername: String? = null,
-)
+) {
+    /** The backend only returns links (https://www.instagram.com/{name}, https://wa.me/{digits}), so read the values back out of them. */
+    val instagramHandle: String
+        get() = instagramUsername?.takeIf { it.isNotBlank() }
+            ?: instagramLink?.substringAfter("instagram.com/", "")?.trim('/')?.takeIf { it.isNotBlank() } ?: ""
+    val whatsappDisplay: String
+        get() = whatsappNumber?.takeIf { it.isNotBlank() }
+            ?: whatsappLink?.substringAfter("wa.me/", "")?.takeIf { it.isNotBlank() }?.let { "+$it" } ?: ""
+}
 
 @Serializable
 data class UpdateUserSocialMediaDTO(val whatsappNumber: String? = null, val instagramUsername: String? = null)
