@@ -127,6 +127,24 @@ def main():
         if st in (200, 201) and isinstance(fr, dict) and fr.get("id"):
             call("PUT", f"friend-requests/{fr['id']}", token=h_tok, params={"friendRequestAction": "accept"})
 
+    # Interests + socials so profiles look like the Figma
+    interests = {
+        "daniel": ["Basketball", "Poker", "Bouldering", "Cooking", "Biking", "F1", "Travel"],
+        "haley": ["Climbing", "Coffee", "Film photography", "Thrifting"],
+        "ethan": ["Basketball", "Hiking", "Poker", "Cooking"],
+        "rafi": ["Billiards", "Night runs", "Chess"],
+        "shannon": ["Studying", "Matcha", "Pilates"],
+        "jenna": ["Sushi", "Karaoke", "Skiing"],
+        "maya": ["Soccer", "Bubble tea"],
+        "leo": ["Biking", "Camping"],
+    }
+    for u, items in interests.items():
+        acc, tok = accounts[u]
+        call("PUT", f"users/{acc['id']}/interests", items, token=tok)
+    for u, ig, wa in (("daniel", "daggerpov", "+16045551001"), ("ethan", "ethanhansen", "+16045551003"), ("haley", "haleywong", "")):
+        acc, tok = accounts[u]
+        call("PUT", f"users/{acc['id']}/social-media", {"instagramUsername": ig, "whatsappNumber": wa or None}, token=tok)
+
     now = datetime.now(timezone.utc).replace(microsecond=0)
 
     def iso(dt):
