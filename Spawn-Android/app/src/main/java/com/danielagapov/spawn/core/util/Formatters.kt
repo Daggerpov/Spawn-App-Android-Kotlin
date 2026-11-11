@@ -137,7 +137,11 @@ object Distance {
         val out = FloatArray(1)
         Location.distanceBetween(from.latitude, from.longitude, to.latitude, to.longitude, out)
         val m = out[0]
-        return if (m < 1000) "${m.toInt()}m away" else String.format(Locale.US, "%.1fkm away", m / 1000f)
+        return when {
+            m < 1000 -> "${m.toInt()}m away"
+            m < 100_000 -> String.format(Locale.US, "%.1fkm away", m / 1000f)
+            else -> "${(m / 1000).toInt()}km away"
+        }
     }
 
     /** Street-ish short name, same trimming as iOS ActivityInfoViewModel(.location). */

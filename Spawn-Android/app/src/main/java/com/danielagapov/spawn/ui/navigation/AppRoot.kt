@@ -25,9 +25,8 @@ import com.danielagapov.spawn.core.util.UserLocation
 import com.danielagapov.spawn.presentation.screens.FriendsPage
 import com.danielagapov.spawn.presentation.screens.MapPage
 import com.danielagapov.spawn.presentation.screens.ProfilePage
-import com.danielagapov.spawn.presentation.screens.activities.ActivityRoutes
-import com.danielagapov.spawn.presentation.screens.activities.ActivityViewModel
-import com.danielagapov.spawn.presentation.screens.activities.createActivityNavGraph
+import com.danielagapov.spawn.ui.create.CreateActivityFlow
+import com.danielagapov.spawn.ui.create.CreateActivityViewModel
 import com.danielagapov.spawn.ui.activity.ActivityDetailSheet
 import com.danielagapov.spawn.ui.auth.*
 import com.danielagapov.spawn.ui.home.HomeScreen
@@ -84,6 +83,7 @@ private fun MainScaffold(user: BaseUserDTO) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     var openActivity by remember { mutableStateOf<FullFeedActivityDTO?>(null) }
     val homeVm: HomeViewModel = viewModel()
+    val createVm: CreateActivityViewModel = viewModel()
 
     val locationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         UserLocation.refresh(context)
@@ -104,18 +104,16 @@ private fun MainScaffold(user: BaseUserDTO) {
             Tab.Home -> HomeScreen(
                 user = user, vm = homeVm,
                 onOpenActivity = { openActivity = it },
-                onQuickCreate = { tab = Tab.Activities },
+                onQuickCreate = { type ->
+                    createVm.reset()
+                    if (type != null) createVm.pickType(type)
+                    tab = Tab.Activities
+                },
                 onSeeAllActivities = { tab = Tab.Map },
                 bottomPadding = bottomPad,
             )
             Tab.Map -> Box(Modifier.fillMaxSize().padding(bottom = bottomPad)) { MapPage() }
-            Tab.Activities -> {
-                val nav = rememberNavController()
-                val createVm: ActivityViewModel = viewModel()
-                Box(Modifier.fillMaxSize().padding(bottom = bottomPad)) {
-                    NavHost(nav, startDestination = ActivityRoutes.STEP1) { createActivityNavGraph(nav, createVm) }
-                }
-            }
+            Tab.Activities -> CreateActivityFlow(createVm, onDone = { tab = Tab.Home }, bottomPadding = bottomPad)
             Tab.Friends -> Box(Modifier.fillMaxSize().padding(bottom = bottomPad).statusBarsPadding()) { FriendsPage() }
             Tab.Profile -> Box(Modifier.fillMaxSize().padding(bottom = bottomPad)) { ProfilePage() }
         }
