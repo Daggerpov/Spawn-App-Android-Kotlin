@@ -28,6 +28,8 @@ USERS = [
     ("rafi", "Rafi Arnouk", "Night owl. Ask me about billiards."),
     ("shannon", "Shannon Lee", "Study buddy for hire."),
     ("jenna", "Jenna Park", "Sushi > everything."),
+    ("maya", "Maya Chen", "Pickup soccer + bubble tea."),
+    ("leo", "Leo Martins", "Will bike anywhere."),
 ]
 
 
@@ -98,7 +100,7 @@ def main():
 
     # Placeholder avatars (local DB only) so screenshots look like real accounts.
     import subprocess
-    avatars = {"daniel": "men/32", "haley": "women/44", "ethan": "men/46", "rafi": "men/75", "shannon": "women/68", "jenna": "women/12"}
+    avatars = {"daniel": "men/32", "haley": "women/44", "ethan": "men/46", "rafi": "men/75", "shannon": "women/68", "jenna": "women/12", "maya": "women/65", "leo": "men/52"}
     for u, a in avatars.items():
         subprocess.run(MYSQL + [f"UPDATE user SET profile_picture_url_string='https://randomuser.me/api/portraits/{a}.jpg' WHERE username='{u}'"], check=True)
     subprocess.run(["redis-cli", "-p", "6380", "FLUSHALL"], capture_output=True)
@@ -117,6 +119,31 @@ def main():
     st, fr, _ = call("POST", "friend-requests", {"senderUserId": h["id"], "receiverUserId": e["id"]}, token=h_tok)
     if st in (200, 201) and isinstance(fr, dict) and fr.get("id"):
         call("PUT", f"friend-requests/{fr['id']}", token=e_tok, params={"friendRequestAction": "accept"})
+
+    # maya & leo are friends of haley (not daniel) so they show up as suggested friends with mutuals
+    for other in ("maya", "leo"):
+        o, o_tok = accounts[other]
+        st, fr, _ = call("POST", "friend-requests", {"senderUserId": o["id"], "receiverUserId": h["id"]}, token=o_tok)
+        if st in (200, 201) and isinstance(fr, dict) and fr.get("id"):
+            call("PUT", f"friend-requests/{fr['id']}", token=h_tok, params={"friendRequestAction": "accept"})
+
+    # Interests + socials so profiles look like the Figma
+    interests = {
+        "daniel": ["Basketball", "Poker", "Bouldering", "Cooking", "Biking", "F1", "Travel"],
+        "haley": ["Climbing", "Coffee", "Film photography", "Thrifting"],
+        "ethan": ["Basketball", "Hiking", "Poker", "Cooking"],
+        "rafi": ["Billiards", "Night runs", "Chess"],
+        "shannon": ["Studying", "Matcha", "Pilates"],
+        "jenna": ["Sushi", "Karaoke", "Skiing"],
+        "maya": ["Soccer", "Bubble tea"],
+        "leo": ["Biking", "Camping"],
+    }
+    for u, items in interests.items():
+        acc, tok = accounts[u]
+        call("PUT", f"users/{acc['id']}/interests", items, token=tok)
+    for u, ig, wa in (("daniel", "daggerpov", "+16045551001"), ("ethan", "ethanhansen", "+16045551003"), ("haley", "haleywong", "")):
+        acc, tok = accounts[u]
+        call("PUT", f"users/{acc['id']}/social-media", {"instagramUsername": ig, "whatsappNumber": wa or None}, token=tok)
 
     now = datetime.now(timezone.utc).replace(microsecond=0)
 

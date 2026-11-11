@@ -1,7 +1,7 @@
 package com.danielagapov.spawn.ui.navigation
 
 import android.Manifest
-import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -22,7 +22,6 @@ import com.danielagapov.spawn.core.model.UserStatus
 import com.danielagapov.spawn.core.session.AuthState
 import com.danielagapov.spawn.core.session.Spawn
 import com.danielagapov.spawn.core.util.UserLocation
-import com.danielagapov.spawn.presentation.screens.FriendsPage
 import com.danielagapov.spawn.presentation.screens.MapPage
 import com.danielagapov.spawn.presentation.screens.ProfilePage
 import com.danielagapov.spawn.ui.create.CreateActivityFlow
@@ -31,6 +30,9 @@ import com.danielagapov.spawn.ui.activity.ActivityDetailSheet
 import com.danielagapov.spawn.ui.auth.*
 import com.danielagapov.spawn.ui.home.HomeScreen
 import com.danielagapov.spawn.ui.home.HomeViewModel
+import com.danielagapov.spawn.ui.friends.FriendsTab
+import com.danielagapov.spawn.ui.friends.FriendsViewModel
+import com.danielagapov.spawn.ui.profile.UserProfileScreen
 import com.danielagapov.spawn.ui.theme.SpawnTheme
 
 @Composable
@@ -84,6 +86,8 @@ private fun MainScaffold(user: BaseUserDTO) {
     var openActivity by remember { mutableStateOf<FullFeedActivityDTO?>(null) }
     val homeVm: HomeViewModel = viewModel()
     val createVm: CreateActivityViewModel = viewModel()
+    val friendsVm: FriendsViewModel = viewModel()
+    var profileTarget by remember { mutableStateOf<BaseUserDTO?>(null) }
 
     val locationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         UserLocation.refresh(context)
@@ -94,9 +98,13 @@ private fun MainScaffold(user: BaseUserDTO) {
     }
 
     val openProfile: (BaseUserDTO) -> Unit = { u ->
-        if (u.id == user.id) { openActivity = null; tab = Tab.Profile }
-        else Toast.makeText(context, "${u.displayName} (@${u.username})", Toast.LENGTH_SHORT).show()
+        openActivity = null
+        if (u.id == user.id) { profileTarget = null; tab = Tab.Profile }
+        else profileTarget = u
     }
+
+    // Back on another tab returns Home before leaving the app (pages inside tabs register their own handlers later, so they win).
+    BackHandler(enabled = tab != Tab.Home && profileTarget == null) { tab = Tab.Home }
 
     Box(Modifier.fillMaxSize()) {
         val bottomPad = TabBarHeight + 24.dp
@@ -114,10 +122,16 @@ private fun MainScaffold(user: BaseUserDTO) {
             )
             Tab.Map -> Box(Modifier.fillMaxSize().padding(bottom = bottomPad)) { MapPage() }
             Tab.Activities -> CreateActivityFlow(createVm, onDone = { tab = Tab.Home }, bottomPadding = bottomPad)
-            Tab.Friends -> Box(Modifier.fillMaxSize().padding(bottom = bottomPad).statusBarsPadding()) { FriendsPage() }
+            Tab.Friends -> FriendsTab(friendsVm, onOpenProfile = openProfile, bottomPadding = bottomPad)
             Tab.Profile -> Box(Modifier.fillMaxSize().padding(bottom = bottomPad)) { ProfilePage() }
         }
-        SpawnTabBar(tab, { tab = it }, Modifier.align(Alignment.BottomCenter))
+        profileTarget?.let { p ->
+            UserProfileScreen(p, onBack = { profileTarget = null; friendsVm.load() }, onOpenActivity = { openActivity = it }, bottomPadding = bottomPad)
+        }
+        SpawnTabBar(
+            tab, { profileTarget = null; tab = it }, Modifier.align(Alignment.BottomCenter),
+            badges = mapOf(Tab.Friends to friendsVm.incoming.size).filterValues { it > 0 },
+        )
     }
 
     openActivity?.let { a ->
