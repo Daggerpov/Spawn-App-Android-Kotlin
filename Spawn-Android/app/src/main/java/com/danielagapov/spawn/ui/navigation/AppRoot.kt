@@ -1,6 +1,8 @@
 package com.danielagapov.spawn.ui.navigation
 
 import android.Manifest
+import android.widget.Toast
+import kotlinx.coroutines.flow.filterNotNull
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,6 +22,9 @@ import com.danielagapov.spawn.core.model.BaseUserDTO
 import com.danielagapov.spawn.core.model.FullFeedActivityDTO
 import com.danielagapov.spawn.core.model.UserStatus
 import com.danielagapov.spawn.core.session.AuthState
+import com.danielagapov.spawn.core.session.DeepLink
+import com.danielagapov.spawn.core.network.bodyOrThrow
+import com.danielagapov.spawn.core.network.friendlyMessage
 import com.danielagapov.spawn.core.session.Spawn
 import com.danielagapov.spawn.core.util.UserLocation
 import com.danielagapov.spawn.ui.map.MapTab
@@ -101,6 +106,28 @@ private fun MainScaffold(user: BaseUserDTO) {
         openActivity = null
         if (u.id == user.id) { profileTarget = null; tab = Tab.Profile }
         else profileTarget = u
+    }
+
+    // Open getspawn.com links (activity drawer or profile), resolving share codes like iOS does
+    LaunchedEffect(Unit) {
+        Spawn.pendingLink.filterNotNull().collect { l ->
+        Spawn.consumeLink()
+        runCatching {
+            when (l) {
+                is DeepLink.Activity -> {
+                    val id = if (DeepLink.isUuid(l.key)) l.key else Spawn.api.resolveActivityShareCode(l.key).bodyOrThrow().id
+                    profileTarget = null
+                    openActivity = Spawn.api.activity(id, user.id, autoJoin = true).bodyOrThrow()
+                    Spawn.feedChanged()
+                }
+                is DeepLink.Profile -> {
+                    val id = if (DeepLink.isUuid(l.key)) l.key else Spawn.api.resolveProfileShareCode(l.key).bodyOrThrow().id
+                    if (id == user.id) { profileTarget = null; tab = Tab.Profile }
+                    else { tab = Tab.Friends; profileTarget = Spawn.api.getUser(id, user.id).bodyOrThrow() }
+                }
+            }
+        }.onFailure { Toast.makeText(context, "Couldn't open that link: ${it.friendlyMessage()}", Toast.LENGTH_LONG).show() }
+        }
     }
 
     // Back on another tab returns Home before leaving the app (pages inside tabs register their own handlers later, so they win).

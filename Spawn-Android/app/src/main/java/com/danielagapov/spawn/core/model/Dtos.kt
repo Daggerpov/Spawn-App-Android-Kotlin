@@ -351,3 +351,6 @@ data class DeviceTokenDTO(val token: String, val deviceType: String = "ANDROID",
 
 @Serializable
 data class ShareCodeDTO(val shareCode: String? = null)
+
+@Serializable
+data class IdDTO(val id: String)
