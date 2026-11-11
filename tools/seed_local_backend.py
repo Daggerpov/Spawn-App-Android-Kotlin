@@ -107,7 +107,7 @@ def main():
     for other in ("haley", "ethan", "rafi", "shannon"):
         o, o_tok = accounts[other]
         st, fr, _ = call("POST", "friend-requests", {"senderUserId": o["id"], "receiverUserId": me["id"]}, token=o_tok)
-        if st == 200 and isinstance(fr, dict) and fr.get("id"):
+        if st in (200, 201) and isinstance(fr, dict) and fr.get("id"):
             call("PUT", f"friend-requests/{fr['id']}", token=me_tok, params={"friendRequestAction": "accept"})
     j, j_tok = accounts["jenna"]
     call("POST", "friend-requests", {"senderUserId": j["id"], "receiverUserId": me["id"]}, token=j_tok)
@@ -115,7 +115,7 @@ def main():
     h, h_tok = accounts["haley"]
     e, e_tok = accounts["ethan"]
     st, fr, _ = call("POST", "friend-requests", {"senderUserId": h["id"], "receiverUserId": e["id"]}, token=h_tok)
-    if st == 200 and isinstance(fr, dict) and fr.get("id"):
+    if st in (200, 201) and isinstance(fr, dict) and fr.get("id"):
         call("PUT", f"friend-requests/{fr['id']}", token=e_tok, params={"friendRequestAction": "accept"})
 
     now = datetime.now(timezone.utc).replace(microsecond=0)
