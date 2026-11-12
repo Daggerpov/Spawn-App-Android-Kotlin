@@ -7,7 +7,7 @@ Only for local development: point it at a backend running on your machine
 Usage:  python3 tools/seed_local_backend.py [base_url]
 
 Every seeded account uses the test password below. Log in on the Android
-emulator with username "daniel" (or any other seeded username) + that password.
+emulator with username "alex" (or any other seeded username) + that password.
 """
 import json
 import sys
@@ -22,11 +22,11 @@ if not any(h in BASE for h in ("localhost", "127.0.0.1", "10.0.2.2")):
 TEST_PASSWORD = "spawntest123"
 
 USERS = [
-    ("daniel", "Daniel Agapov", "Building Spawn. Always down for dinner."),
-    ("haley", "Haley Wong", "Climbing, coffee, chaos."),
-    ("ethan", "Ethan Hansen", "Basketball 5 on 5s every Thursday."),
-    ("rafi", "Rafi Arnouk", "Night owl. Ask me about billiards."),
-    ("shannon", "Shannon Lee", "Study buddy for hire."),
+    ("alex", "Alex Rivera", "Building Spawn. Always down for dinner."),
+    ("jamie", "Jamie Brooks", "Climbing, coffee, chaos."),
+    ("sam", "Sam Carter", "Basketball 5 on 5s every Thursday."),
+    ("omar", "Omar Haddad", "Night owl. Ask me about billiards."),
+    ("priya", "Priya Nair", "Study buddy for hire."),
     ("jenna", "Jenna Park", "Sushi > everything."),
     ("maya", "Maya Chen", "Pickup soccer + bubble tea."),
     ("leo", "Leo Martins", "Will bike anywhere."),
@@ -95,32 +95,32 @@ def ensure_user(username, name, bio):
 
 def main():
     accounts = {u: ensure_user(u, n, b) for u, n, b in USERS}
-    me, me_tok = accounts["daniel"]
+    me, me_tok = accounts["alex"]
     print("users:", {u: a[0]["id"] for u, a in accounts.items()})
 
     # Placeholder avatars (local DB only) so screenshots look like real accounts.
     import subprocess
-    avatars = {"daniel": "men/32", "haley": "women/44", "ethan": "men/46", "rafi": "men/75", "shannon": "women/68", "jenna": "women/12", "maya": "women/65", "leo": "men/52"}
+    avatars = {"alex": "men/32", "jamie": "women/44", "sam": "men/46", "omar": "men/75", "priya": "women/68", "jenna": "women/12", "maya": "women/65", "leo": "men/52"}
     for u, a in avatars.items():
         subprocess.run(MYSQL + [f"UPDATE user SET profile_picture_url_string='https://randomuser.me/api/portraits/{a}.jpg' WHERE username='{u}'"], check=True)
     subprocess.run(["redis-cli", "-p", "6380", "FLUSHALL"], capture_output=True)
 
-    # Friendships: daniel <-> everyone except jenna (jenna sends daniel a request instead)
-    for other in ("haley", "ethan", "rafi", "shannon"):
+    # Friendships: alex <-> everyone except jenna (jenna sends alex a request instead)
+    for other in ("jamie", "sam", "omar", "priya"):
         o, o_tok = accounts[other]
         st, fr, _ = call("POST", "friend-requests", {"senderUserId": o["id"], "receiverUserId": me["id"]}, token=o_tok)
         if st in (200, 201) and isinstance(fr, dict) and fr.get("id"):
             call("PUT", f"friend-requests/{fr['id']}", token=me_tok, params={"friendRequestAction": "accept"})
     j, j_tok = accounts["jenna"]
     call("POST", "friend-requests", {"senderUserId": j["id"], "receiverUserId": me["id"]}, token=j_tok)
-    # haley <-> ethan so "people met"/mutuals have data
-    h, h_tok = accounts["haley"]
-    e, e_tok = accounts["ethan"]
+    # jamie <-> sam so "people met"/mutuals have data
+    h, h_tok = accounts["jamie"]
+    e, e_tok = accounts["sam"]
     st, fr, _ = call("POST", "friend-requests", {"senderUserId": h["id"], "receiverUserId": e["id"]}, token=h_tok)
     if st in (200, 201) and isinstance(fr, dict) and fr.get("id"):
         call("PUT", f"friend-requests/{fr['id']}", token=e_tok, params={"friendRequestAction": "accept"})
 
-    # maya & leo are friends of haley (not daniel) so they show up as suggested friends with mutuals
+    # maya & leo are friends of jamie (not alex) so they show up as suggested friends with mutuals
     for other in ("maya", "leo"):
         o, o_tok = accounts[other]
         st, fr, _ = call("POST", "friend-requests", {"senderUserId": o["id"], "receiverUserId": h["id"]}, token=o_tok)
@@ -129,11 +129,11 @@ def main():
 
     # Interests + socials so profiles look like the Figma
     interests = {
-        "daniel": ["Basketball", "Poker", "Bouldering", "Cooking", "Biking", "F1", "Travel"],
-        "haley": ["Climbing", "Coffee", "Film photography", "Thrifting"],
-        "ethan": ["Basketball", "Hiking", "Poker", "Cooking"],
-        "rafi": ["Billiards", "Night runs", "Chess"],
-        "shannon": ["Studying", "Matcha", "Pilates"],
+        "alex": ["Basketball", "Poker", "Bouldering", "Cooking", "Biking", "F1", "Travel"],
+        "jamie": ["Climbing", "Coffee", "Film photography", "Thrifting"],
+        "sam": ["Basketball", "Hiking", "Poker", "Cooking"],
+        "omar": ["Billiards", "Night runs", "Chess"],
+        "priya": ["Studying", "Matcha", "Pilates"],
         "jenna": ["Sushi", "Karaoke", "Skiing"],
         "maya": ["Soccer", "Bubble tea"],
         "leo": ["Biking", "Camping"],
@@ -141,7 +141,7 @@ def main():
     for u, items in interests.items():
         acc, tok = accounts[u]
         call("PUT", f"users/{acc['id']}/interests", items, token=tok)
-    for u, ig, wa in (("daniel", "daggerpov", "+16045551001"), ("ethan", "ethanhansen", "+16045551003"), ("haley", "haleywong", "")):
+    for u, ig, wa in (("alex", "alexrivera", "+16045551001"), ("sam", "samcarter", "+16045551003"), ("jamie", "jamiebrooks", "")):
         acc, tok = accounts[u]
         call("PUT", f"users/{acc['id']}/social-media", {"instagramUsername": ig, "whatsappNumber": wa or None}, token=tok)
 
@@ -179,11 +179,11 @@ def main():
             return None
         return resp["activity"]["id"]
 
-    a1 = create("daniel", "Dinner @ Chipotle", "🌯", "chipotle", 90, 90, "Come grab dinner with us!", ["haley", "ethan", "rafi", "shannon"])
-    a2 = create("ethan", "Billiards Tourney", "🎱", "pit", 30, 150, "Bracket starts at 8, show up early", ["daniel", "haley", "rafi"])
-    a3 = create("rafi", "Late Night Basketball", "🏀", "srec", 1, 120, "5 on 5s, bring water", ["daniel", "ethan"])
-    a4 = create("shannon", "Study Sesh", "📚", "irving", 240, 180, "Midterm grind, 3rd floor", ["daniel", "haley"])
-    a5 = create("haley", "Poker Night", "🃏", "koerner", 60 * 26, 180, "Buy-in is snacks", ["daniel", "shannon", "ethan"])
+    a1 = create("alex", "Dinner @ Chipotle", "🌯", "chipotle", 90, 90, "Come grab dinner with us!", ["jamie", "sam", "omar", "priya"])
+    a2 = create("sam", "Billiards Tourney", "🎱", "pit", 30, 150, "Bracket starts at 8, show up early", ["alex", "jamie", "omar"])
+    a3 = create("omar", "Late Night Basketball", "🏀", "srec", 1, 120, "5 on 5s, bring water", ["alex", "sam"])
+    a4 = create("priya", "Study Sesh", "📚", "irving", 240, 180, "Midterm grind, 3rd floor", ["alex", "jamie"])
+    a5 = create("jamie", "Poker Night", "🃏", "koerner", 60 * 26, 180, "Buy-in is snacks", ["alex", "priya", "sam"])
 
     # People join
     def join(user, act):
@@ -192,12 +192,12 @@ def main():
         u, tok = accounts[user]
         call("PUT", f"activities/{act}/toggle-status/{u['id']}", token=tok)
 
-    for u in ("haley", "ethan", "rafi"):
+    for u in ("jamie", "sam", "omar"):
         join(u, a1)
-    for u in ("daniel", "haley"):
+    for u in ("alex", "jamie"):
         join(u, a2)
-    join("ethan", a3)
-    join("haley", a4)
+    join("sam", a3)
+    join("jamie", a4)
 
     def chat(user, act, text):
         if not act:
@@ -205,11 +205,11 @@ def main():
         u, tok = accounts[user]
         call("POST", "chat-messages", {"content": text, "senderUserId": u["id"], "activityId": act}, token=tok)
 
-    chat("haley", a1, "Come grab dinner with us!! 🌯")
-    chat("ethan", a1, "omw, 10 min")
-    chat("daniel", a1, "grabbing a big table by the window")
-    chat("rafi", a2, "who's bringing the cue chalk")
-    chat("ethan", a3, "need 2 more for full court")
+    chat("jamie", a1, "Come grab dinner with us!! 🌯")
+    chat("sam", a1, "omw, 10 min")
+    chat("alex", a1, "grabbing a big table by the window")
+    chat("omar", a2, "who's bringing the cue chalk")
+    chat("sam", a3, "need 2 more for full court")
     print("seeded activities:", [a1, a2, a3, a4, a5])
 
 
