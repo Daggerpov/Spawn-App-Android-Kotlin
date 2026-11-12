@@ -44,7 +44,7 @@ Spontaneity made easy.
 
 - **Target audience**: 18+ (or 13+ if that matches the iOS age rating, but don't target children)
 - **Ads**: No ads
-- **Account deletion**: in the app under Profile → ☰ → Delete account. Play also needs a **web link** where people can ask for deletion (a page or form on getspawn.com, or a mailto that's clearly documented).
+- **Account deletion**: in the app under Profile → ☰ → Delete account. Web link for Play's form: **https://getspawn.com/delete-account**
 - **Data safety** (what the app collects and sends to the Spawn backend over HTTPS):
 
 | Data type | Collected | Shared | Why | Optional? |
@@ -59,30 +59,21 @@ Spontaneity made easy.
 
 ## Release checklist
 
-1. **Upload key**: create it once and back it up (losing it means asking Google to reset it):
-   ```
-   keytool -genkeypair -v -keystore ~/spawn-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
-   ```
-   Then create `Spawn-Android/keystore.properties` (gitignored):
-   ```
-   storeFile=/Users/you/spawn-upload.jks
-   storePassword=...
-   keyAlias=upload
-   keyPassword=...
-   ```
-2. **Google sign-in**: in the backend's Google Cloud project, create an OAuth client of type **Web application** (its ID goes in `WEB_CLIENT_ID`), plus an **Android** client with package `com.danielagapov.spawn` and the SHA-1 of both the upload key and Play's app-signing key. Put `WEB_CLIENT_ID=...` in `Spawn-Android/local.properties`, and set the backend's `GOOGLE_CLIENT_ID` to `<iOS client id>,<web client id>`.
-3. Bump `versionCode` / `versionName` in `app/build.gradle.kts`.
-4. Build the bundle: `cd Spawn-Android && ./gradlew bundleRelease` → `app/build/outputs/bundle/release/app-release.aab`.
-5. Optional check before uploading: `./gradlew installMinifiedLocal` installs the same R8-minified code pointed at your local backend.
-6. Play Console → **Testing → Internal testing** → create a release → upload the `.aab` and `app/build/outputs/mapping/release/mapping.txt`.
-7. **App Links**: copy the SHA-256 from Play Console → **Setup → App signing**, and serve this at `https://getspawn.com/.well-known/assetlinks.json` so share links open the app directly:
-   ```json
-   [{
-     "relation": ["delegate_permission/common.handle_all_urls"],
-     "target": {
-       "namespace": "android_app",
-       "package_name": "com.danielagapov.spawn",
-       "sha256_cert_fingerprints": ["<APP SIGNING SHA-256>"]
-     }
-   }]
-   ```
+Already done (2026-11-11):
+
+- **Upload key** is at `~/spawn-android-signing/spawn-upload.jks` (password in `keystore.properties` next to it, also copied to `Spawn-Android/keystore.properties`, which is gitignored). **Back up that whole folder** (password manager or encrypted drive). If you lose it, Google can reset the upload key, but it takes a few days.
+  - SHA-1 `6F:1D:E6:6A:C6:A4:82:32:CC:F9:97:55:F7:7D:CD:10:54:4F:AC:90`
+  - SHA-256 `94:E3:27:8A:31:6E:92:33:0A:5C:9C:76:2B:89:0B:35:65:41:69:E7:70:C2:CF:4B:CA:86:5E:D3:9E:C3:BD:53`
+- **Google sign-in**: the app uses the existing Web client "Spawn-Server" (`822760465266-1dunhm4j…`). Google Cloud has Android clients "Spawn Android (upload key)" and "Spawn Android (debug key)". Railway's `GOOGLE_CLIENT_ID` is `<iOS id>,<web id>`.
+- **getspawn.com** serves `/.well-known/assetlinks.json` (upload key for now) and `/delete-account`.
+
+Still to do:
+
+1. **Play Console**: create the developer account ($25, ID check), then **Create app**: name Spawn, App, Free.
+2. Fill in **App content** (privacy policy, ads: no, data safety from the table above, target audience 18+, account deletion URL) and the **store listing** from this file.
+3. Build: `cd Spawn-Android && ./gradlew bundleRelease` → `app/build/outputs/bundle/release/app-release.aab` (bump `versionCode` in `app/build.gradle.kts` for every upload after the first).
+4. **Testing → Internal testing → Create release**: accept Play App Signing, upload the `.aab`, and add `app/build/outputs/mapping/release/mapping.txt` under App bundle explorer → Downloads → ReTrace mapping file.
+5. Once Play App Signing exists, go to **Test and release → App integrity → App signing** and copy the **app signing key**'s SHA-1 and SHA-256:
+   - Google Cloud → Clients → create another Android client for `com.danielagapov.spawn` with that SHA-1 (Google sign-in fails in Play-installed builds without it).
+   - Add the SHA-256 to `sha256_cert_fingerprints` in `spawn-app/spawn/public/.well-known/assetlinks.json` and redeploy the site (`vercel --prod` from the spawn-app repo).
+6. New personal developer accounts need a **closed test with 12 testers for 14 days** before Play allows a production release.
