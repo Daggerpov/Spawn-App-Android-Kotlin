@@ -23,7 +23,7 @@ API_BASE_URL=http://10.0.2.2:8080/api/v1/
 
 (`10.0.2.2` is your computer as seen from the emulator.) `tools/seed_local_backend.py` fills a local backend with test users, friends, activities and chats.
 
-Google sign-in needs `WEB_CLIENT_ID=<web OAuth client id>` in `local.properties` (the backend must accept that client ID too).
+Google sign-in works out of the box: the build uses the backend's Web OAuth client ID, and Google Cloud has Android clients for `com.danielagapov.spawn` with both the debug key and the upload key. A new machine's debug key needs its SHA-1 added as another Android client before Google sign-in works there.
 
 # Releasing to Google Play
 

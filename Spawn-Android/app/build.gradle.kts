@@ -20,9 +20,11 @@ val keystoreProperties = Properties().apply {
 
 val prodApiBaseUrl = "https://spawn-app-back-end-production.up.railway.app/api/v1/"
 
-// Google sign-in: the *Web* OAuth client ID from the same Google Cloud project as the backend.
+// Google sign-in: the *Web* OAuth client ID ("Spawn-Server") from the backend's Google Cloud project.
+// Client IDs aren't secret (iOS ships its own in Info.plist); the backend's GOOGLE_CLIENT_ID lists this one too.
 val webClientId: String = localProperties.getProperty("WEB_CLIENT_ID")
-    ?: System.getenv("SPAWN_WEB_CLIENT_ID") ?: ""
+    ?: System.getenv("SPAWN_WEB_CLIENT_ID")
+    ?: "822760465266-1dunhm4jgrcg17137rfjo2idu5qefchk.apps.googleusercontent.com"
 
 android {
     namespace = "com.danielagapov.spawn"
