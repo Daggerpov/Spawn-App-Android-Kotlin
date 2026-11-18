@@ -70,7 +70,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.danielagapov.spawn.BuildConfig
 import com.danielagapov.spawn.core.model.*
-import com.danielagapov.spawn.core.util.hexColor
 import com.danielagapov.spawn.ui.components.Avatar
 import com.danielagapov.spawn.ui.components.EmptyState
 import com.danielagapov.spawn.ui.components.PrimaryButton
@@ -271,13 +270,13 @@ private fun ActivityCalendar(
                         } else {
                             val date = month.atDay(day)
                             val items = byDay[date].orEmpty()
-                            val color = items.firstOrNull()?.let(::calendarColor)
+                            val colorIndex = items.firstOrNull()?.let(::calendarColorIndex)
                             Box(
                                 Modifier
                                     .fillMaxSize()
                                     .shadow(2.dp, RoundedCornerShape(6.dp))
                                     .clip(RoundedCornerShape(6.dp))
-                                    .background(color ?: gray)
+                                    .activityCellBackground(colorIndex, gray)
                                     .then(if (date == today) Modifier.border(2.dp, Palette.Indigo500, RoundedCornerShape(6.dp)) else Modifier)
                                     .clickable(enabled = items.isNotEmpty()) { onDay(date, items) },
                                 contentAlignment = Alignment.Center,
@@ -295,8 +294,17 @@ private fun ActivityCalendar(
         }
     }
 }
-private fun calendarColor(item: CalendarActivityDTO): Color =
-    item.colorHexCode?.let { hexColor(it) } ?: ActivityPalette.color((item.activityId ?: item.id).hashCode())
+/** Same color assignment as the activity cards a day opens (the backend's colorHexCode is ignored, like iOS). */
+private fun calendarColorIndex(item: CalendarActivityDTO): Int = Spawn.colors.indexFor(item.activityId ?: item.id)
+
+/** Calendar cell fill: the activity card's Figma radial gradient, or plain gray for an empty day. */
+private fun Modifier.activityCellBackground(colorIndex: Int?, empty: Color): Modifier =
+    if (colorIndex == null) background(empty)
+    else drawBehind {
+        drawRect(ActivityPalette.card(colorIndex, size.width, size.height))
+        // soft top highlight, matching ActivityCard
+        drawRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent), endY = size.height * 0.35f))
+    }
 
 @Composable
 private fun SubPageHeader(title: String, onBack: () -> Unit) {
@@ -351,13 +359,13 @@ private fun CalendarMonthGrid(month: YearMonth, items: List<CalendarActivityDTO>
                         if (day <= days) {
                             val date = month.atDay(day)
                             val dayItems = byDay[date].orEmpty()
-                            val color = dayItems.firstOrNull()?.let(::calendarColor)
+                            val colorIndex = dayItems.firstOrNull()?.let(::calendarColorIndex)
                             Box(
                                 Modifier
                                     .fillMaxSize()
                                     .shadow(2.dp, RoundedCornerShape(10.dp))
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(color?.let { Brush.linearGradient(listOf(it.copy(alpha = 0.7f), it)) } ?: SolidColor(gray))
+                                    .activityCellBackground(colorIndex, gray)
                                     .then(if (date == today) Modifier.border(2.dp, Palette.Indigo500, RoundedCornerShape(10.dp)) else Modifier)
                                     .clickable(enabled = dayItems.isNotEmpty()) { onDay(date, dayItems) },
                             ) {
@@ -366,7 +374,7 @@ private fun CalendarMonthGrid(month: YearMonth, items: List<CalendarActivityDTO>
                                     dayItems.size == 1 -> Text(dayItems[0].icon ?: "⭐️", fontSize = 36.sp, modifier = Modifier.align(Alignment.Center))
                                 }
                                 Text(
-                                    "$day", style = onest(11.sp, FontWeight.Medium), color = if (color != null) Color.White else Palette.Gray500,
+                                    "$day", style = onest(11.sp, FontWeight.Medium), color = if (colorIndex != null) Color.White else Palette.Gray500,
                                     modifier = Modifier.align(Alignment.BottomEnd).padding(end = 7.dp, bottom = 5.dp),
                                 )
                             }
