@@ -58,7 +58,8 @@ private fun AuthFlow() {
     val nav = rememberNavController()
     val vm: AuthViewModel = viewModel()
     NavHost(nav, startDestination = "welcome") {
-        composable("welcome") { WelcomeScreen(onGetStarted = { nav.navigate("getin") }) }
+        composable("welcome") { WelcomeScreen(onGetStarted = { nav.navigate("intro") }) }
+        composable("intro") { IntroScreen(onBack = { nav.popBackStack() }, onDone = { nav.navigate("getin") }) }
         composable("getin") { GetInScreen(onCreateAccount = { vm.clearError(); nav.navigate("signup") }, onLogin = { vm.clearError(); nav.navigate("login") }) }
         composable("login") { LoginScreen(vm, onBack = { nav.popBackStack() }) }
         composable("signup") { SignupEmailScreen(vm, onBack = { nav.popBackStack() }, onCodeSent = { nav.navigate("verify") }) }
