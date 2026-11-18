@@ -1,8 +1,8 @@
 package com.danielagapov.spawn.ui.profile
 
+import com.danielagapov.spawn.ui.components.InAppBanners
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -75,7 +75,8 @@ fun UserProfileScreen(
     val context = LocalContext.current
     val c = SpawnTheme.colors
     LaunchedEffect(target.id) { vm.load(target) }
-    LaunchedEffect(vm.toast) { vm.toast?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show(); vm.toast = null } }
+    LaunchedEffect(vm.toast) { vm.toast?.let { InAppBanners.success(it); vm.toast = null } }
+    LaunchedEffect(vm.error) { vm.error?.let { InAppBanners.error(it); vm.error = null } }
     LaunchedEffect(vm.blocked) { if (vm.blocked) onBack() }
     BackHandler(onBack = onBack)
 
@@ -127,7 +128,6 @@ fun UserProfileScreen(
             Spacer(Modifier.height(16.dp))
             RelationshipButtons(vm)
 
-            vm.error?.let { Box(Modifier.padding(horizontal = 32.dp, vertical = 8.dp)) { ErrorBanner(it) { vm.error = null } } }
 
             Spacer(Modifier.height(28.dp))
             InterestsCard(vm.interests, vm.socials, showSocials = vm.isFriend, firstName = user.firstName, modifier = Modifier.padding(horizontal = 32.dp))

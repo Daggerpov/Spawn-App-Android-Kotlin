@@ -1,5 +1,6 @@
 package com.danielagapov.spawn.ui.friends
 
+import com.danielagapov.spawn.ui.components.InAppBanners
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -110,7 +111,7 @@ class FriendsViewModel : ViewModel() {
         viewModelScope.launch {
             runCatching { Spawn.api.sendFriendRequest(CreateFriendRequestDTO(id = java.util.UUID.randomUUID().toString(), senderUserId = uid, receiverUserId = userId)).bodyOrThrow() }
                 .onSuccess { toast = "Friend request sent"; refreshRequests() }
-                .onFailure { requested = requested - userId; error = it.friendlyMessage() }
+                .onFailure { requested = requested - userId; InAppBanners.error(it.friendlyMessage()) }
         }
     }
 
@@ -119,14 +120,14 @@ class FriendsViewModel : ViewModel() {
         viewModelScope.launch {
             runCatching { Spawn.api.friendRequestAction(req.id, "accept").bodyOrThrow() }
                 .onSuccess { toast = "You're now friends with ${req.senderUser.firstName}"; Spawn.feedChanged(); load() }
-                .onFailure { error = it.friendlyMessage(); load() }
+                .onFailure { InAppBanners.error(it.friendlyMessage()); load() }
         }
     }
 
     fun reject(req: FetchFriendRequestDTO) {
         incoming = incoming.filterNot { it.id == req.id }
         viewModelScope.launch {
-            runCatching { Spawn.api.friendRequestAction(req.id, "reject").bodyOrThrow() }.onFailure { error = it.friendlyMessage(); load() }
+            runCatching { Spawn.api.friendRequestAction(req.id, "reject").bodyOrThrow() }.onFailure { InAppBanners.error(it.friendlyMessage()); load() }
         }
     }
 
@@ -134,7 +135,7 @@ class FriendsViewModel : ViewModel() {
         sent = sent.filterNot { it.id == req.id }
         requested = requested - req.receiverUser.id
         viewModelScope.launch {
-            runCatching { Spawn.api.friendRequestAction(req.id, "cancel").bodyOrThrow() }.onFailure { error = it.friendlyMessage(); load() }
+            runCatching { Spawn.api.friendRequestAction(req.id, "cancel").bodyOrThrow() }.onFailure { InAppBanners.error(it.friendlyMessage()); load() }
         }
     }
 
@@ -144,7 +145,7 @@ class FriendsViewModel : ViewModel() {
         viewModelScope.launch {
             runCatching { Spawn.api.removeFriend(uid, userId).bodyOrThrow() }
                 .onSuccess { toast = "Removed from friends"; Spawn.feedChanged() }
-                .onFailure { friends = before; error = it.friendlyMessage() }
+                .onFailure { friends = before; InAppBanners.error(it.friendlyMessage()) }
         }
     }
 
@@ -155,7 +156,7 @@ class FriendsViewModel : ViewModel() {
         viewModelScope.launch {
             runCatching { Spawn.api.blockUser(BlockedUserCreationDTO(uid, userId, reason)).bodyOrThrow() }
                 .onSuccess { toast = "User blocked"; Spawn.feedChanged() }
-                .onFailure { error = it.friendlyMessage(); load() }
+                .onFailure { InAppBanners.error(it.friendlyMessage()); load() }
         }
     }
 
@@ -163,7 +164,7 @@ class FriendsViewModel : ViewModel() {
         viewModelScope.launch {
             runCatching { Spawn.api.report(CreateReportedContentDTO(uid, userId, EntityType.User, type, description)).bodyOrThrow() }
                 .onSuccess { toast = "Thanks — we'll review this report" }
-                .onFailure { error = it.friendlyMessage() }
+                .onFailure { InAppBanners.error(it.friendlyMessage()) }
         }
     }
 

@@ -1,7 +1,7 @@
 package com.danielagapov.spawn.ui.navigation
 
+import com.danielagapov.spawn.ui.components.InAppBanners
 import android.Manifest
-import android.widget.Toast
 import kotlinx.coroutines.flow.filterNotNull
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -126,7 +126,7 @@ private fun MainScaffold(user: BaseUserDTO) {
                     else { tab = Tab.Friends; profileTarget = Spawn.api.getUser(id, user.id).bodyOrThrow() }
                 }
             }
-        }.onFailure { Toast.makeText(context, "Couldn't open that link: ${it.friendlyMessage()}", Toast.LENGTH_LONG).show() }
+        }.onFailure { InAppBanners.error("Couldn't open that link: ${it.friendlyMessage()}") }
         }
     }
 

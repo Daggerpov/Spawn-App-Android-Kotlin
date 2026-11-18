@@ -1,5 +1,7 @@
 package com.danielagapov.spawn.ui.activity
 
+import com.danielagapov.spawn.ui.components.InAppBannerHost
+import com.danielagapov.spawn.ui.components.InAppBanners
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -12,7 +14,6 @@ import androidx.compose.ui.unit.Velocity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.slideInHorizontally
@@ -103,7 +104,7 @@ fun ActivityDetailSheet(
     val swipeToResize = remember { DrawerSwipeConnection(expandedState) { pageState.value == Page.Detail } }
 
     LaunchedEffect(vm.message) {
-        vm.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show(); vm.message = null }
+        vm.message?.let { InAppBanners.success(it); vm.message = null }
     }
     DisposableEffect(Unit) { onDispose { vm.stopChatPolling() } }
 
@@ -160,6 +161,8 @@ fun ActivityDetailSheet(
                     }
                 }
             }
+            // The sheet is its own window, so banners raised while it's open are drawn at its top
+            InAppBannerHost(Modifier.align(Alignment.TopCenter), overlay = true, statusBarInset = full)
         }
         BackHandler(enabled = page != Page.Detail) { page = Page.Detail }
     }

@@ -1,5 +1,6 @@
 package com.danielagapov.spawn.ui.activity
 
+import com.danielagapov.spawn.ui.components.InAppBanners
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -68,7 +69,7 @@ class ActivityDetailViewModel : ViewModel() {
         val a = activity ?: return
         if (isOwner || toggling) return
         if (!isGoing && isFull) {
-            message = "This activity is full."
+            InAppBanners.error("This activity is full.")
             return
         }
         toggling = true
@@ -78,7 +79,7 @@ class ActivityDetailViewModel : ViewModel() {
                 activity = updated
                 Spawn.feedChanged()
             } catch (e: Exception) {
-                message = e.friendlyMessage()
+                InAppBanners.error(e.friendlyMessage())
             } finally { toggling = false }
         }
     }
@@ -93,7 +94,7 @@ class ActivityDetailViewModel : ViewModel() {
                 val m = Spawn.api.sendChat(CreateChatMessageDTO(body, me, a.id)).bodyOrThrow()
                 chats = (chats + m).distinctBy { it.id }
             } catch (e: Exception) {
-                message = e.friendlyMessage()
+                InAppBanners.error(e.friendlyMessage())
             } finally { sending = false }
         }
     }
@@ -116,7 +117,7 @@ class ActivityDetailViewModel : ViewModel() {
 
     fun deleteMessage(m: FullActivityChatMessageDTO) {
         chats = chats.filterNot { it.id == m.id }
-        viewModelScope.launch { runCatching { Spawn.api.deleteChat(m.id).bodyOrThrow() }.onFailure { message = it.friendlyMessage(); loadChats() } }
+        viewModelScope.launch { runCatching { Spawn.api.deleteChat(m.id).bodyOrThrow() }.onFailure { InAppBanners.error(it.friendlyMessage()); loadChats() } }
     }
 
     fun report(contentId: String, type: EntityType, reportType: ReportType, description: String) {
@@ -124,7 +125,7 @@ class ActivityDetailViewModel : ViewModel() {
             try {
                 Spawn.api.report(CreateReportedContentDTO(me, contentId, type, reportType, description)).bodyOrThrow()
                 message = "Thanks — we’ll review this report."
-            } catch (e: Exception) { message = e.friendlyMessage() }
+            } catch (e: Exception) { InAppBanners.error(e.friendlyMessage()) }
         }
     }
 
@@ -135,7 +136,7 @@ class ActivityDetailViewModel : ViewModel() {
                 chats = chats.filterNot { it.senderUser.id == user.id }
                 message = "${user.displayName} is blocked."
                 Spawn.feedChanged()
-            } catch (e: Exception) { message = e.friendlyMessage() }
+            } catch (e: Exception) { InAppBanners.error(e.friendlyMessage()) }
         }
     }
 
@@ -146,7 +147,7 @@ class ActivityDetailViewModel : ViewModel() {
                 Spawn.api.deleteActivity(a.id).bodyOrThrow()
                 Spawn.feedChanged()
                 onDone()
-            } catch (e: Exception) { message = e.friendlyMessage() }
+            } catch (e: Exception) { InAppBanners.error(e.friendlyMessage()) }
         }
     }
 
@@ -157,7 +158,7 @@ class ActivityDetailViewModel : ViewModel() {
                 activity = Spawn.api.updateActivity(a.id, ActivityPartialUpdateDTO(title = title, note = note)).bodyOrThrow()
                 Spawn.feedChanged()
                 onDone()
-            } catch (e: Exception) { message = e.friendlyMessage() }
+            } catch (e: Exception) { InAppBanners.error(e.friendlyMessage()) }
         }
     }
 }
