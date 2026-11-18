@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -191,7 +192,7 @@ fun SignupEmailScreen(vm: AuthViewModel, onBack: () -> Unit, onCodeSent: () -> U
         Spacer(Modifier.height(20.dp))
         PrimaryButton("Continue", { vm.sendCode(email, onCodeSent) }, enabled = email.contains("@"), loading = vm.loading)
         OrDivider()
-        GoogleButton("Sign up with Google") { vm.googleSignIn(context, isSignup = true) }
+        GoogleButton("Sign in with Google") { vm.googleSignIn(context, isSignup = true) }
     }
 }
 
@@ -200,7 +201,8 @@ fun VerifyCodeScreen(vm: AuthViewModel, onBack: () -> Unit) {
     var code by rememberSaveable { mutableStateOf("") }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
-    AuthScaffold(onBack, "Verify Your Email", "We’ve sent a 6-digit code to\n${vm.signupEmail}", vm.error) {
+    val invalid = vm.error != null
+    AuthScaffold(onBack, "Verify Your Email", "We’ve sent a 6-digit code to\n${vm.signupEmail}", null) {
         Text("Verification Code", style = onest(14.sp, FontWeight.Medium), color = SpawnTheme.colors.text)
         Spacer(Modifier.height(8.dp))
         BasicTextField(
@@ -219,7 +221,11 @@ fun VerifyCodeScreen(vm: AuthViewModel, onBack: () -> Unit) {
                                 .height(56.dp)
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(SpawnTheme.colors.input)
-                                .border(if (active) 1.5.dp else 0.dp, if (active) Palette.Indigo500 else Color.Transparent, RoundedCornerShape(12.dp)),
+                                .border(
+                                    if (invalid || active) 1.5.dp else 0.dp,
+                                    when { invalid -> Palette.Red600; active -> Palette.Indigo500; else -> Color.Transparent },
+                                    RoundedCornerShape(12.dp),
+                                ),
                             contentAlignment = Alignment.Center,
                         ) { Text(ch, style = onest(22.sp, FontWeight.SemiBold), color = SpawnTheme.colors.text) }
                     }
@@ -240,12 +246,21 @@ fun VerifyCodeScreen(vm: AuthViewModel, onBack: () -> Unit) {
                 )
             }
         }
+        vm.error?.let { message ->
+            Spacer(Modifier.height(24.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Error, null, tint = Palette.Red600, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(message, style = onest(14.sp), color = Palette.Red600)
+            }
+        }
     }
 }
 
 @Composable
 fun AccountDetailsScreen(vm: AuthViewModel, needsPassword: Boolean, onDone: () -> Unit) {
-    var username by rememberSaveable { mutableStateOf(Spawn.currentUser?.username ?: "") }
+    // New email accounts get the email as a placeholder username server-side; start empty instead (#52).
+    var username by rememberSaveable { mutableStateOf(Spawn.currentUser?.username?.takeUnless { "@" in it } ?: "") }
     var phone by rememberSaveable { mutableStateOf("") }
     var pass by rememberSaveable { mutableStateOf("") }
     var confirm by rememberSaveable { mutableStateOf("") }
@@ -268,21 +283,22 @@ fun AccountDetailsScreen(vm: AuthViewModel, needsPassword: Boolean, onDone: () -
             loading = vm.loading,
         )
     }) {
-        SpawnTextField(username, { username = it.trim(); vm.clearError() }, "yourusername", label = "Username")
+        SpawnTextField(username, { username = it.trim(); vm.clearError() }, "Create a unique nickname", label = "Username")
         Spacer(Modifier.height(16.dp))
         SpawnTextField(phone, { phone = it; vm.clearError() }, "(604) 555-0123", label = "Phone Number", keyboardType = KeyboardType.Phone)
         if (needsPassword) {
             Spacer(Modifier.height(16.dp))
-            SpawnTextField(pass, { pass = it; vm.clearError() }, "At least 8 characters", label = "Password", isPassword = true)
+            SpawnTextField(pass, { pass = it; vm.clearError() }, "Enter a strong password", label = "Password", isPassword = true)
             Spacer(Modifier.height(16.dp))
-            SpawnTextField(confirm, { confirm = it }, "Re-enter your password", label = "Confirm Password", isPassword = true, error = if (mismatch) "Passwords don’t match" else null)
+            SpawnTextField(confirm, { confirm = it }, "Re-enter password", label = "Confirm Password", isPassword = true, error = if (mismatch) "Passwords don’t match" else null)
         }
     }
 }
 
 @Composable
 fun NameScreen(vm: AuthViewModel, onDone: () -> Unit) {
-    var name by rememberSaveable { mutableStateOf(Spawn.currentUser?.name ?: "") }
+    // Keep a real name (e.g. from Google) but never prefill the email (#52).
+    var name by rememberSaveable { mutableStateOf(Spawn.currentUser?.name?.takeUnless { "@" in it } ?: "") }
     AuthScaffold(null, "What’s Your Name?", "This is how your friends will see you on Spawn.", vm.error, bottom = {
         PrimaryButton("Continue", { vm.submitName(name, onDone) }, enabled = name.isNotBlank(), loading = vm.loading)
     }) {
