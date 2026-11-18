@@ -49,6 +49,9 @@ data class AuthResponseDTO(
 data class LoginDTO(val usernameOrEmail: String, val password: String)
 
 @Serializable
+data class PasswordChangeDTO(val currentPassword: String, val newPassword: String)
+
+@Serializable
 data class OAuthRegistrationDTO(
     val idToken: String,
     val provider: String,

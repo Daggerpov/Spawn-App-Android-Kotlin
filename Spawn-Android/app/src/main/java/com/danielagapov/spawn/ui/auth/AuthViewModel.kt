@@ -55,7 +55,7 @@ class AuthViewModel : ViewModel() {
     fun login(usernameOrEmail: String, password: String) = launch {
         try {
             val r = api.login(LoginDTO(usernameOrEmail.trim(), password)).bodyOrThrow()
-            Spawn.onAuthenticated(r)
+            Spawn.onAuthenticated(r, viaOAuth = false)
         } catch (e: ApiException) {
             error = when (e.code) {
                 401, 404 -> "That username/email and password don't match."
@@ -86,7 +86,7 @@ class AuthViewModel : ViewModel() {
             val email = google.id
             try {
                 val r = api.signIn(google.idToken, email, "google").bodyOrThrow()
-                Spawn.onAuthenticated(r)
+                Spawn.onAuthenticated(r, viaOAuth = true)
             } catch (e: ApiException) {
                 if (e.code != 404) throw e
                 // New to Spawn: create the account from the Google profile, then onboard.
@@ -96,7 +96,7 @@ class AuthViewModel : ViewModel() {
                         name = google.displayName, profilePictureUrl = google.profilePictureUri?.toString(),
                     )
                 ).bodyOrThrow()
-                Spawn.onAuthenticated(r)
+                Spawn.onAuthenticated(r, viaOAuth = true)
             }
         }
     }
@@ -128,7 +128,7 @@ class AuthViewModel : ViewModel() {
     fun verifyCode(code: String) = launch {
         try {
             val r = api.checkVerification(EmailVerificationVerifyDTO(signupEmail, code)).bodyOrThrow()
-            Spawn.onAuthenticated(r)
+            Spawn.onAuthenticated(r, viaOAuth = false)
         } catch (e: ApiException) {
             error = if (e.code == 400 || e.code == 401) "Invalid code. Try again." else e.message
         }

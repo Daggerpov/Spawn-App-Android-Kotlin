@@ -43,6 +43,10 @@ interface SpawnApi {
 
     @POST("auth/accept-tos/{id}")
     suspend fun acceptTos(@Path("id") userId: String): Response<BaseUserDTO>
+
+    /** Email accounts only. A wrong current password comes back as 401 (see TokenAuthenticator). */
+    @POST("auth/change-password")
+    suspend fun changePassword(@Body body: PasswordChangeDTO): Response<Unit>
     // endregion
 
     // region Users / profile

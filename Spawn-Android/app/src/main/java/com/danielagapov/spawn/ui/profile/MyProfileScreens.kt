@@ -73,6 +73,8 @@ import com.danielagapov.spawn.core.model.*
 import com.danielagapov.spawn.core.util.hexColor
 import com.danielagapov.spawn.ui.components.Avatar
 import com.danielagapov.spawn.ui.components.EmptyState
+import com.danielagapov.spawn.ui.components.PrimaryButton
+import com.danielagapov.spawn.ui.components.SpawnTextField
 import com.danielagapov.spawn.ui.components.ErrorBanner
 import com.danielagapov.spawn.ui.components.UserAvatar
 import com.danielagapov.spawn.ui.friends.ConfirmDialog
@@ -86,7 +88,7 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
-private enum class ProfilePage { Main, Edit, Settings, Blocked, Calendar, Day }
+private enum class ProfilePage { Main, Edit, Settings, Account, ChangePassword, Blocked, Calendar, Day }
 
 /** Profile tab (Figma "Your Profile", "Edit Profile", "Settings & Preferences"). */
 @Composable
@@ -97,7 +99,12 @@ fun MyProfileTab(user: BaseUserDTO, onOpenActivity: (FullFeedActivityDTO) -> Uni
     LaunchedEffect(vm.toast) { vm.toast?.let { InAppBanners.success(it); vm.toast = null } }
     LaunchedEffect(vm.error) { vm.error?.let { InAppBanners.error(it); vm.error = null } }
     BackHandler(page != ProfilePage.Main) {
-        page = when (page) { ProfilePage.Blocked -> ProfilePage.Settings; ProfilePage.Day -> dayBack; else -> ProfilePage.Main }
+        page = when (page) {
+            ProfilePage.Account, ProfilePage.Blocked -> ProfilePage.Settings
+            ProfilePage.ChangePassword -> ProfilePage.Account
+            ProfilePage.Day -> dayBack
+            else -> ProfilePage.Main
+        }
     }
     // A day with one activity opens it; a day with more opens the "Events - <day>" list (Figma 1557:3742).
     fun openDay(date: LocalDate, items: List<CalendarActivityDTO>, from: ProfilePage) {
@@ -114,7 +121,12 @@ fun MyProfileTab(user: BaseUserDTO, onOpenActivity: (FullFeedActivityDTO) -> Uni
                 onDay = { date, items -> openDay(date, items, ProfilePage.Main) }, onFullCalendar = { page = ProfilePage.Calendar },
             )
             ProfilePage.Edit -> EditProfile(user, vm, bottomPadding, onClose = { page = ProfilePage.Main })
-            ProfilePage.Settings -> SettingsPage(vm, bottomPadding, onBack = { page = ProfilePage.Main }, onBlocked = { vm.loadBlocked(); page = ProfilePage.Blocked })
+            ProfilePage.Settings -> SettingsPage(
+                vm, bottomPadding, onBack = { page = ProfilePage.Main },
+                onAccount = { page = ProfilePage.Account }, onBlocked = { vm.loadBlocked(); page = ProfilePage.Blocked },
+            )
+            ProfilePage.Account -> AccountSettingsPage(vm, bottomPadding, onBack = { page = ProfilePage.Settings }, onChangePassword = { page = ProfilePage.ChangePassword })
+            ProfilePage.ChangePassword -> ChangePasswordPage(vm, bottomPadding, onBack = { page = ProfilePage.Account })
             ProfilePage.Blocked -> BlockedUsersPage(vm, bottomPadding, onBack = { page = ProfilePage.Settings })
             ProfilePage.Calendar -> CalendarPage(vm, bottomPadding, onBack = { page = ProfilePage.Main }, onDay = { date, items -> openDay(date, items, ProfilePage.Calendar) })
             ProfilePage.Day -> DayActivitiesPage(vm, bottomPadding, onBack = { page = dayBack }, onOpenActivity = onOpenActivity)
@@ -549,12 +561,11 @@ private fun SocialField(
 
 // region Settings
 @Composable
-private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -> Unit, onBlocked: () -> Unit) {
+private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -> Unit, onAccount: () -> Unit, onBlocked: () -> Unit) {
     val c = SpawnTheme.colors
     val context = LocalContext.current
     var feedbackOpen by remember { mutableStateOf(false) }
     var confirmLogout by remember { mutableStateOf(false) }
-    var confirmDelete by remember { mutableStateOf(false) }
     fun open(url: String) = runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
@@ -564,8 +575,9 @@ private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -
         }
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, bottom = bottomPadding + 16.dp)) {
             SettingsSection("Account Settings")
+            SettingsRow(Icons.Outlined.LockReset, "Account", onClick = onAccount)
+            SettingsSection("Privacy & Safety")
             SettingsRow(Icons.Outlined.Block, "Blocked users", onClick = onBlocked)
-            SettingsRow(Icons.Outlined.DeleteForever, "Delete account", danger = true) { confirmDelete = true }
             SettingsSection("Contact Us")
             SettingsRow(Icons.Outlined.Feedback, "Send us feedback") { feedbackOpen = true }
             SettingsRow(Icons.Outlined.ChatBubbleOutline, "Contact us") { open("mailto:spawnappmarketing@gmail.com?subject=Spawn%20Android") }
@@ -577,24 +589,83 @@ private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -
             SettingsSection("Legal")
             SettingsRow(Icons.Outlined.Policy, "Privacy Policy", external = true) { open(BuildConfig.PRIVACY_POLICY_URL) }
             SettingsSection("Authentication")
-            Row(
-                Modifier.fillMaxWidth().clickable { confirmLogout = true }.padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Log Out", style = onest(17.sp, FontWeight.SemiBold), color = c.text, modifier = Modifier.weight(1f))
-                Icon(Icons.AutoMirrored.Filled.Logout, null, tint = c.text, modifier = Modifier.size(22.dp))
-            }
+            ActionRow("Log Out", Icons.AutoMirrored.Filled.Logout, c.text) { confirmLogout = true }
             Spacer(Modifier.height(24.dp))
             Text("Spawn for Android ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", style = onest(12.sp), color = c.placeholder, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         }
     }
     if (feedbackOpen) FeedbackDialog(onDismiss = { feedbackOpen = false }) { type, msg -> vm.sendFeedback(type, msg) { feedbackOpen = false } }
     if (confirmLogout) ConfirmDialog("Log out?", "You'll need to sign in again to see your activities.", "Log Out", { confirmLogout = false }) { confirmLogout = false; vm.logOut() }
+}
+
+/** Figma "Account Settings" (455:6297): Change Password for email accounts, then Delete Account. */
+@Composable
+private fun AccountSettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -> Unit, onChangePassword: () -> Unit) {
+    var confirmDelete by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize().statusBarsPadding()) {
+        SubPageHeader("Account Settings", onBack)
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, bottom = bottomPadding + 16.dp)) {
+            // Google accounts have no Spawn password to change.
+            if (!Spawn.isOAuthUser) {
+                SettingsSection("Authentication")
+                SettingsRow(Icons.Outlined.LockReset, "Change Password", onClick = onChangePassword)
+            }
+            SettingsSection("Permanent Actions")
+            ActionRow("Delete Account", Icons.Outlined.Delete, Palette.Red600) { confirmDelete = true }
+        }
+    }
     if (confirmDelete) ConfirmDialog(
         "Delete your account?",
         "This permanently deletes your profile, activities, friends and messages. It can't be undone.",
         "Delete", { confirmDelete = false },
     ) { confirmDelete = false; vm.deleteAccount() }
+}
+
+/** iOS ChangePasswordView: current password, then the new one twice. */
+@Composable
+private fun ChangePasswordPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -> Unit) {
+    // Plain remember on purpose: passwords stay out of saved instance state.
+    var current by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirm by remember { mutableStateOf("") }
+    var currentError by remember { mutableStateOf<String?>(null) }
+    var newError by remember { mutableStateOf<String?>(null) }
+    var confirmError by remember { mutableStateOf<String?>(null) }
+    fun submit() {
+        newError = if (newPassword.length < 8) "Passwords need at least 8 characters." else null
+        confirmError = if (newError == null && confirm != newPassword) "Passwords don't match." else null
+        if (newError != null || confirmError != null) return
+        vm.changePassword(current, newPassword, onWrongCurrent = { currentError = "Current password is incorrect." }, onDone = onBack)
+    }
+
+    Column(Modifier.fillMaxSize().statusBarsPadding()) {
+        SubPageHeader("Change Password", onBack)
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = bottomPadding + 16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            SpawnTextField(current, { current = it; currentError = null }, "Enter your current password", label = "Current Password", isPassword = true, error = currentError)
+            SpawnTextField(newPassword, { newPassword = it; newError = null }, "Enter a strong password", label = "New Password", isPassword = true, error = newError)
+            SpawnTextField(confirm, { confirm = it; confirmError = null }, "Re-enter password", label = "Confirm New Password", isPassword = true, error = confirmError)
+            PrimaryButton(
+                "Update Password", ::submit,
+                enabled = current.isNotEmpty() && newPassword.isNotEmpty() && confirm.isNotEmpty(),
+                loading = vm.changingPassword,
+            )
+        }
+    }
+}
+
+/** A bold row with its icon on the right (Figma "Log Out", "Delete Account"). */
+@Composable
+private fun ActionRow(label: String, icon: ImageVector, color: Color, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick).padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = onest(17.sp, FontWeight.SemiBold), color = color, modifier = Modifier.weight(1f))
+        Icon(icon, null, tint = color, modifier = Modifier.size(22.dp))
+    }
 }
 
 @Composable
