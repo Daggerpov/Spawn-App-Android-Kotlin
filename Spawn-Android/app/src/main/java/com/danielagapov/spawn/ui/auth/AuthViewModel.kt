@@ -130,7 +130,7 @@ class AuthViewModel : ViewModel() {
             val r = api.checkVerification(EmailVerificationVerifyDTO(signupEmail, code)).bodyOrThrow()
             Spawn.onAuthenticated(r)
         } catch (e: ApiException) {
-            error = if (e.code == 400 || e.code == 401) "That code isn't right. Check your email and try again." else e.message
+            error = if (e.code == 400 || e.code == 401) "Invalid code. Try again." else e.message
         }
     }
 
