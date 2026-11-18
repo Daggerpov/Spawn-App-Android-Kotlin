@@ -62,7 +62,9 @@ object Spawn {
             return
         }
         _auth.value = try {
-            stateFor(api.quickSignIn().bodyOrThrow())
+            val r = api.quickSignIn().bodyOrThrow()
+            isOAuthUser = r.isOAuthUser ?: (r.user.provider != null && r.user.provider != "email")
+            stateFor(r)
         } catch (e: Exception) {
             // Offline with tokens: stay signed out only if the server rejected us.
             if (e is com.danielagapov.spawn.core.network.ApiException) tokens.clear()
@@ -70,7 +72,15 @@ object Spawn {
         }
     }
 
-    fun onAuthenticated(response: AuthResponseDTO) {
+    /**
+     * True for Google accounts, which have no Spawn password, so Settings hides Change Password
+     * (iOS shows it for email sign-ins only). Login responses leave isOAuthUser out, so callers say how they signed in.
+     */
+    var isOAuthUser = false
+        private set
+
+    fun onAuthenticated(response: AuthResponseDTO, viaOAuth: Boolean) {
+        isOAuthUser = response.isOAuthUser ?: viaOAuth
         _auth.value = stateFor(response)
     }
 
@@ -102,6 +112,7 @@ object Spawn {
 
     fun signOutLocally() {
         tokens.clear()
+        isOAuthUser = false
         _auth.value = AuthState.SignedOut
     }
 

@@ -12,6 +12,7 @@ import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.Route
 import okhttp3.logging.HttpLoggingInterceptor
@@ -64,6 +65,9 @@ private val UNAUTHENTICATED_PATHS = listOf(
     "contacts/cross-reference",
 )
 
+/** auth/change-password answers a wrong current password with a 401 carrying this message. */
+private const val WRONG_CURRENT_PASSWORD = "Current password is incorrect"
+
 /** Adds the bearer token to requests and saves any tokens the backend hands back in response headers. */
 class AuthInterceptor(private val tokens: TokenStore) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -105,6 +109,10 @@ class TokenAuthenticator(
     override fun authenticate(route: Route?, response: Response): Request? {
         val path = response.request.url.encodedPath
         if (UNAUTHENTICATED_PATHS.any { path.endsWith(it) }) return null
+        // That 401 is an answer, not an expired token: refreshing would resend the same password and get it again.
+        if (path.endsWith("auth/change-password") &&
+            runCatching { response.peekBody(4096).string() }.getOrDefault("").contains(WRONG_CURRENT_PASSWORD)
+        ) return null
         if (responseCount(response) >= 2) return null
         val refresh = tokens.refreshToken ?: return null.also { onSessionExpired() }
 
@@ -117,7 +125,7 @@ class TokenAuthenticator(
             }
             val refreshReq = Request.Builder()
                 .url(baseUrl + "auth/refresh-token")
-                .post(okhttp3.RequestBody.create(null, ByteArray(0)))
+                .post(ByteArray(0).toRequestBody(null))
                 .header("Authorization", "Bearer $refresh")
                 .build()
             return try {

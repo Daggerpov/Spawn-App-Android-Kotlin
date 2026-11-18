@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.danielagapov.spawn.core.model.*
+import com.danielagapov.spawn.core.network.ApiException
 import com.danielagapov.spawn.core.network.bodyOrThrow
 import com.danielagapov.spawn.core.network.friendlyMessage
 import com.danielagapov.spawn.core.session.Spawn
@@ -187,6 +188,21 @@ class MyProfileViewModel : ViewModel() {
             runCatching { Spawn.api.feedback(FeedbackSubmissionDTO(type, me, message.trim())).bodyOrThrow() }
                 .onSuccess { toast = "Thanks for the feedback!"; onDone() }
                 .onFailure { error = it.friendlyMessage() }
+        }
+    }
+
+    var changingPassword by mutableStateOf(false)
+        private set
+
+    /** iOS ChangePasswordView. A 401 means the current password is wrong, which the page shows on that field. */
+    fun changePassword(current: String, new: String, onWrongCurrent: () -> Unit, onDone: () -> Unit) {
+        if (changingPassword) return
+        changingPassword = true
+        viewModelScope.launch {
+            runCatching { Spawn.api.changePassword(PasswordChangeDTO(current, new)).bodyOrThrow() }
+                .onSuccess { toast = "Your password has been changed."; onDone() }
+                .onFailure { if (it is ApiException && it.code == 401) onWrongCurrent() else error = it.friendlyMessage() }
+            changingPassword = false
         }
     }
 
