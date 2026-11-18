@@ -28,13 +28,13 @@ val webClientId: String = localProperties.getProperty("WEB_CLIENT_ID")
 
 android {
     namespace = "com.danielagapov.spawn"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.danielagapov.spawn"
         minSdk = 28
-        targetSdk = 35
-        versionCode = 1
+        targetSdk = 36
+        versionCode = 2
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
