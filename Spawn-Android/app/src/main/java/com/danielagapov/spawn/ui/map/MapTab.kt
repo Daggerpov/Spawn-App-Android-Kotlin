@@ -1,5 +1,8 @@
 package com.danielagapov.spawn.ui.map
 
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import com.mapbox.maps.EdgeInsets
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -80,7 +83,7 @@ private val UBC = Point.fromLngLat(-123.2460, 49.2606)
 
 /** Map tab (Figma "Map View"): activity pins with their emoji, 3D / locate controls, compass and time filter. */
 @Composable
-fun MapTab(activities: List<FullFeedActivityDTO>, onOpenActivity: (FullFeedActivityDTO) -> Unit, bottomPadding: Dp) {
+fun MapTab(activities: List<FullFeedActivityDTO>, onOpenActivity: (FullFeedActivityDTO) -> Unit, bottomPadding: Dp, selectedId: String? = null) {
     val context = LocalContext.current
     val me by UserLocation.location.collectAsState()
     var filter by rememberSaveable { mutableStateOf(TimeFilter.All) }
@@ -95,6 +98,31 @@ fun MapTab(activities: List<FullFeedActivityDTO>, onOpenActivity: (FullFeedActiv
         setCameraOptions { center(start); zoom(14.0); pitch(0.0) }
     }
     LaunchedEffect(Unit) { UserLocation.refresh(context) }
+
+    // Figma "Map View - Select Event": keep the tapped pin in view above the half-open drawer (56% of the screen).
+    val density = LocalDensity.current
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    var hadSelection by remember { mutableStateOf(false) }
+    LaunchedEffect(selectedId) {
+        val loc = activities.firstOrNull { it.id == selectedId }?.location
+        if (loc != null) {
+            hadSelection = true
+            val drawer = with(density) { (screenHeight * 0.56f).toPx() }.toDouble()
+            viewport.easeTo(
+                com.mapbox.maps.CameraOptions.Builder()
+                    .center(Point.fromLngLat(loc.longitude, loc.latitude))
+                    .padding(EdgeInsets(0.0, 0.0, drawer, 0.0))
+                    .build(),
+                MapAnimationOptions.mapAnimationOptions { duration(500) },
+            )
+        } else if (hadSelection) {
+            hadSelection = false
+            viewport.easeTo(
+                com.mapbox.maps.CameraOptions.Builder().padding(EdgeInsets(0.0, 0.0, 0.0, 0.0)).build(),
+                MapAnimationOptions.mapAnimationOptions { duration(400) },
+            )
+        }
+    }
 
     BackHandler(filtersOpen) { filtersOpen = false }
 
@@ -124,7 +152,10 @@ fun MapTab(activities: List<FullFeedActivityDTO>, onOpenActivity: (FullFeedActiv
                             allowOverlap(true)
                         },
                     ) {
-                        ActivityPin(a.icon ?: "⭐️", ActivityPalette.color(Spawn.colors.indexFor(a.id)), live = ActivityStatus.of(a).isLive) { onOpenActivity(a) }
+                        ActivityPin(
+                            a.icon ?: "⭐️", ActivityPalette.color(Spawn.colors.indexFor(a.id)),
+                            live = ActivityStatus.of(a).isLive, selected = a.id == selectedId,
+                        ) { onOpenActivity(a) }
                     }
                 }
             }
@@ -222,8 +253,10 @@ private fun FilterPill(label: String, selected: Boolean, wide: Boolean, onClick:
 
 /** The Figma map marker: a colored teardrop with the activity's emoji. */
 @Composable
-private fun ActivityPin(emoji: String, color: Color, live: Boolean, onClick: () -> Unit) {
-    Box(Modifier.size(44.dp, 58.dp).clickable(remember { MutableInteractionSource() }, null, onClick = onClick)) {
+private fun ActivityPin(emoji: String, color: Color, live: Boolean, selected: Boolean = false, onClick: () -> Unit) {
+    // The selected pin is drawn larger, like Figma's "Select Event" frame
+    val scale = if (selected) 1.3f else 1f
+    Box(Modifier.size(44.dp * scale, 58.dp * scale).clickable(remember { MutableInteractionSource() }, null, onClick = onClick)) {
         Canvas(Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
@@ -239,7 +272,7 @@ private fun ActivityPin(emoji: String, color: Color, live: Boolean, onClick: () 
             translate(0f, -2f) { drawPath(path, color) }
             drawCircle(Color.White.copy(alpha = 0.18f), radius = r * 0.78f, center = Offset(r, r - 2f))
         }
-        Text(emoji, fontSize = 20.sp, modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp))
+        Text(emoji, fontSize = 20.sp * scale, modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp * scale))
         if (live) {
             Box(Modifier.align(Alignment.TopEnd).size(12.dp).clip(CircleShape).background(Color.White).padding(2.dp).clip(CircleShape).background(Palette.HappeningNow))
         }
