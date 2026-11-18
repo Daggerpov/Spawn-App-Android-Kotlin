@@ -10,7 +10,11 @@ import com.danielagapov.spawn.core.network.bodyOrThrow
 import com.danielagapov.spawn.core.network.friendlyMessage
 import com.danielagapov.spawn.core.session.Spawn
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.YearMonth
+import java.util.TimeZone
 import java.util.UUID
 
 /** Another user's profile (iOS ProfileView for a non-self user + ProfileViewModel friendship actions). */
@@ -34,10 +38,53 @@ class UserProfileViewModel : ViewModel() {
     val relationship: UserRelationshipType? get() = user?.relationshipStatus
     val isFriend get() = relationship == UserRelationshipType.FRIEND
 
+    /** Soonest first, then past newest first (iOS FriendActivitiesShowAllView). */
+    val upcoming get() = activities.filterNot(::isPast).sortedBy { it.startTime ?: "" }
+    val past get() = activities.filter(::isPast).sortedByDescending { it.startTime ?: "" }
+    private fun isPast(a: FullFeedActivityDTO) = a.isPastActivity == true || a.isExpired == true
+
+    // Their calendar (Figma "Profile (Friend)" 1760:3527, iOS FriendActivitiesCalendarView)
+    var month by mutableStateOf(YearMonth.now()); private set
+    var calendar by mutableStateOf<List<CalendarActivityDTO>>(emptyList()); private set
+
+    fun changeMonth(delta: Long) {
+        month = month.plusMonths(delta)
+        loadCalendar()
+    }
+
+    private fun loadCalendar() {
+        val id = user?.id ?: return
+        val m = month
+        viewModelScope.launch {
+            runCatching { Spawn.api.calendar(id, m.monthValue, m.year, TimeZone.getDefault().id, requestingUserId = me).bodyOrThrow() }
+                .onSuccess { if (m == month && user?.id == id) calendar = it }
+        }
+    }
+
+    /** A tapped day with several activities ("Events - <day>"); null when none is open. */
+    var dayDate by mutableStateOf<LocalDate?>(null)
+    var dayActivities by mutableStateOf<List<FullFeedActivityDTO>>(emptyList()); private set
+
+    /** One activity opens directly, several open the day list. The profile's own list saves a request. */
+    fun openDay(date: LocalDate, items: List<CalendarActivityDTO>, onOpenActivity: (FullFeedActivityDTO) -> Unit) {
+        val ids = items.mapNotNull { it.activityId }.distinct()
+        viewModelScope.launch {
+            val found = ids.map { id ->
+                async { activities.firstOrNull { it.id == id } ?: runCatching { Spawn.api.activity(id, me).bodyOrThrow() }.getOrNull() }
+            }.awaitAll().filterNotNull()
+            when {
+                found.size == 1 -> onOpenActivity(found[0])
+                found.size > 1 -> { dayActivities = found; dayDate = date }
+                else -> error = "Couldn't open that day's activities."
+            }
+        }
+    }
+
     fun load(target: BaseUserDTO) {
         if (user?.id != target.id) {
             user = target
             interests = emptyList(); socials = null; activities = emptyList()
+            month = YearMonth.now(); calendar = emptyList(); dayDate = null
         }
         viewModelScope.launch {
             loading = true
@@ -45,10 +92,10 @@ class UserProfileViewModel : ViewModel() {
             val i = async { runCatching { Spawn.api.interests(target.id).bodyOrThrow() } }
             val s = async { runCatching { Spawn.api.socialMedia(target.id).bodyOrThrow() } }
             val a = async { runCatching { Spawn.api.profileActivities(target.id, me).bodyOrThrow() } }
-            u.await().onSuccess { user = it }.onFailure { error = it.friendlyMessage() }
+            u.await().onSuccess { user = it; if (isFriend) loadCalendar() }.onFailure { error = it.friendlyMessage() }
             i.await().onSuccess { interests = it }
             s.await().onSuccess { socials = it }
-            a.await().onSuccess { list -> activities = list.filter { it.isExpired != true }.sortedBy { it.startTime ?: "" } }
+            a.await().onSuccess { activities = it }
             loading = false
         }
     }

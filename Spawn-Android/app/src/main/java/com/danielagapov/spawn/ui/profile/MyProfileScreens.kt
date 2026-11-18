@@ -179,7 +179,10 @@ private fun ProfileMain(
         Spacer(Modifier.height(28.dp))
         InterestsCard(vm.interests, vm.socials, showSocials = true, firstName = "You", modifier = Modifier.padding(horizontal = 32.dp))
         Spacer(Modifier.height(28.dp))
-        ActivityCalendar(vm, onDay = onDay, onOpenFull = onFullCalendar, modifier = Modifier.padding(horizontal = 32.dp))
+        ActivityCalendar(
+            vm.month, vm.calendar, onMonthChange = vm::changeMonth, onDay = onDay, onOpenFull = onFullCalendar,
+            modifier = Modifier.padding(horizontal = 32.dp),
+        )
     }
 }
 
@@ -215,17 +218,21 @@ private fun Stat(icon: ImageVector, value: Int?, label: String) {
     }
 }
 
-/** Month grid from the Figma: gray squares, colored squares with the activity's emoji, dashed padding days. */
+/**
+ * Month grid from the Figma: gray squares, colored squares with the activity's emoji, dashed padding days.
+ * Used on your own profile and a friend's (Figma 1760:3527); [onOpenFull] makes the month title open the full calendar.
+ */
 @Composable
-private fun ActivityCalendar(
-    vm: MyProfileViewModel,
+internal fun ActivityCalendar(
+    month: YearMonth,
+    items: List<CalendarActivityDTO>,
+    onMonthChange: (Long) -> Unit,
     onDay: (LocalDate, List<CalendarActivityDTO>) -> Unit,
-    onOpenFull: () -> Unit,
+    onOpenFull: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val c = SpawnTheme.colors
-    val month = vm.month
-    val byDay = vm.calendar.groupBy { runCatching { LocalDate.parse(it.date.take(10)) }.getOrNull() }
+    val byDay = items.groupBy { runCatching { LocalDate.parse(it.date.take(10)) }.getOrNull() }
     val first = month.atDay(1)
     val lead = first.dayOfWeek.value % 7 // Sunday-first like the Figma
     val cells = lead + month.lengthOfMonth()
@@ -235,17 +242,19 @@ private fun ActivityCalendar(
         Row(verticalAlignment = Alignment.CenterVertically) {
             // Tapping the month opens the full "Your Event Calendar" page (Figma 1321:11975, iOS ActivityCalendarView)
             Row(
-                Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable(onClickLabel = "Open calendar", onClick = onOpenFull).padding(vertical = 4.dp),
+                Modifier.weight(1f).clip(RoundedCornerShape(8.dp))
+                    .then(if (onOpenFull != null) Modifier.clickable(onClickLabel = "Open calendar", onClick = onOpenFull) else Modifier)
+                    .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     "${month.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${month.year}",
                     style = onest(16.sp, FontWeight.SemiBold), color = c.textSecondary,
                 )
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = c.textSecondary, modifier = Modifier.size(20.dp))
+                if (onOpenFull != null) Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = c.textSecondary, modifier = Modifier.size(20.dp))
             }
-            IconButton(onClick = { vm.changeMonth(-1) }, modifier = Modifier.size(32.dp)) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous month", tint = c.textSecondary) }
-            IconButton(onClick = { vm.changeMonth(1) }, modifier = Modifier.size(32.dp)) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next month", tint = c.textSecondary) }
+            IconButton(onClick = { onMonthChange(-1) }, modifier = Modifier.size(32.dp)) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous month", tint = c.textSecondary) }
+            IconButton(onClick = { onMonthChange(1) }, modifier = Modifier.size(32.dp)) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next month", tint = c.textSecondary) }
         }
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -307,7 +316,7 @@ private fun Modifier.activityCellBackground(colorIndex: Int?, empty: Color): Mod
     }
 
 @Composable
-private fun SubPageHeader(title: String, onBack: () -> Unit) {
+internal fun SubPageHeader(title: String, onBack: () -> Unit) {
     val c = SpawnTheme.colors
     Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp)) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = c.heading) }
