@@ -1,5 +1,6 @@
 package com.danielagapov.spawn.ui.profile
 
+import com.danielagapov.spawn.ui.components.InAppBanners
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.graphics.Brush
 import com.danielagapov.spawn.core.session.Spawn
@@ -8,7 +9,6 @@ import com.danielagapov.spawn.ui.components.LoadingBox
 import java.time.YearMonth
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -90,7 +90,8 @@ fun MyProfileTab(user: BaseUserDTO, onOpenActivity: (FullFeedActivityDTO) -> Uni
     val context = LocalContext.current
     var page by rememberSaveable { mutableStateOf(ProfilePage.Main) }
     var dayBack by rememberSaveable { mutableStateOf(ProfilePage.Main) }
-    LaunchedEffect(vm.toast) { vm.toast?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show(); vm.toast = null } }
+    LaunchedEffect(vm.toast) { vm.toast?.let { InAppBanners.success(it); vm.toast = null } }
+    LaunchedEffect(vm.error) { vm.error?.let { InAppBanners.error(it); vm.error = null } }
     BackHandler(page != ProfilePage.Main) {
         page = when (page) { ProfilePage.Blocked -> ProfilePage.Settings; ProfilePage.Day -> dayBack; else -> ProfilePage.Main }
     }
@@ -160,7 +161,6 @@ private fun ProfileMain(
             Stat(Icons.Default.Star, vm.stats?.spawnsMade, "Spawns\nmade")
             Stat(Icons.Default.EditCalendar, vm.stats?.spawnsJoined, "Spawns\njoined")
         }
-        vm.error?.let { Box(Modifier.padding(horizontal = 32.dp, vertical = 8.dp)) { ErrorBanner(it) { vm.error = null } } }
         Spacer(Modifier.height(28.dp))
         InterestsCard(vm.interests, vm.socials, showSocials = true, firstName = "You", modifier = Modifier.padding(horizontal = 32.dp))
         Spacer(Modifier.height(28.dp))
@@ -428,7 +428,6 @@ private fun EditProfile(user: BaseUserDTO, vm: MyProfileViewModel, bottomPadding
                 else Text("Save", style = onest(16.sp, FontWeight.Medium), color = if (changed) Color.White else Palette.Indigo300)
             }
         }
-        vm.error?.let { Spacer(Modifier.height(12.dp)); ErrorBanner(it) { vm.error = null } }
         Spacer(Modifier.height(20.dp))
         Box(Modifier.size(128.dp).clickable { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
             if (photo != null) AsyncImage(photo, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape))
@@ -549,7 +548,6 @@ private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -
             Text("Settings & Preferences", style = onest(20.sp, FontWeight.SemiBold), color = c.heading, modifier = Modifier.align(Alignment.Center))
         }
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, bottom = bottomPadding + 16.dp)) {
-            vm.error?.let { ErrorBanner(it) { vm.error = null } }
             SettingsSection("Account Settings")
             SettingsRow(Icons.Outlined.Block, "Blocked users", onClick = onBlocked)
             SettingsRow(Icons.Outlined.DeleteForever, "Delete account", danger = true) { confirmDelete = true }

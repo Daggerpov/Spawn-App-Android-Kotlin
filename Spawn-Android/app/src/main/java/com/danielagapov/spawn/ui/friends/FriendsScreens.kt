@@ -1,10 +1,11 @@
 package com.danielagapov.spawn.ui.friends
 
+import android.os.Build
+import com.danielagapov.spawn.ui.components.InAppBanners
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -59,7 +60,7 @@ private enum class FriendsPage { Main, Search, Requests }
 fun FriendsTab(vm: FriendsViewModel, onOpenProfile: (BaseUserDTO) -> Unit, bottomPadding: Dp) {
     var page by rememberSaveable { mutableStateOf(FriendsPage.Main) }
     val context = LocalContext.current
-    LaunchedEffect(vm.toast) { vm.toast?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show(); vm.toast = null } }
+    LaunchedEffect(vm.toast) { vm.toast?.let { InAppBanners.success(it); vm.toast = null } }
     LaunchedEffect(Unit) { vm.load() }
     BackHandler(page != FriendsPage.Main) { vm.clearSearch(); page = FriendsPage.Main }
 
@@ -305,7 +306,8 @@ fun profileUrl(user: BaseUserDTO) = "${BuildConfig.SHARE_BASE_URL}/profile/${use
 fun copyProfileUrl(context: Context, user: BaseUserDTO) {
     val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     cm.setPrimaryClip(ClipData.newPlainText("Spawn profile", profileUrl(user)))
-    Toast.makeText(context, "Profile link copied", Toast.LENGTH_SHORT).show()
+    // Android 13+ already confirms copies with its own clipboard popup
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) InAppBanners.success("Profile link copied")
 }
 
 fun shareProfile(context: Context, user: BaseUserDTO) {

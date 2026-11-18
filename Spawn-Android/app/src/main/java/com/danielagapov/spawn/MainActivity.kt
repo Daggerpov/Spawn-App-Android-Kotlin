@@ -1,5 +1,10 @@
 package com.danielagapov.spawn
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import com.danielagapov.spawn.ui.components.InAppBannerHost
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -30,7 +35,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             SpawnTheme {
-                AppRoot()
+                Box(Modifier.fillMaxSize()) {
+                    AppRoot()
+                    InAppBannerHost(Modifier.align(Alignment.TopCenter))
+                }
             }
         }
     }
