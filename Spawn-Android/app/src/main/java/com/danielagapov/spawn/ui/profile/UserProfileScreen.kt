@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +47,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -54,7 +57,16 @@ import com.danielagapov.spawn.R
 import com.danielagapov.spawn.core.model.*
 import com.danielagapov.spawn.core.session.Spawn
 import com.danielagapov.spawn.ui.activity.ReportDialog
+import com.danielagapov.spawn.core.util.Dates
+import com.danielagapov.spawn.core.util.Distance
 import com.danielagapov.spawn.ui.components.ActivityCard
+import com.danielagapov.spawn.ui.components.ParticipantsStack
+import com.danielagapov.spawn.ui.theme.ActivityPalette
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 import com.danielagapov.spawn.ui.components.ErrorBanner
 import com.danielagapov.spawn.ui.components.PrimaryButton
 import com.danielagapov.spawn.ui.components.UserAvatar
@@ -88,6 +100,7 @@ fun UserProfileScreen(
     var confirmBlock by remember { mutableStateOf(false) }
     var reporting by remember { mutableStateOf(false) }
     var pickingTypes by remember { mutableStateOf(false) }
+    var showAll by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize().background(c.background)) {
         Column(
@@ -137,11 +150,26 @@ fun UserProfileScreen(
             Spacer(Modifier.height(28.dp))
             Column(Modifier.fillMaxWidth().padding(horizontal = 32.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (vm.isFriend) {
-                    Text("Activities by ${user.firstName}", style = onest(16.sp, FontWeight.SemiBold), color = c.textSecondary)
-                    if (vm.activities.isEmpty()) {
+                    // Figma "Profile (Friend)" (1760:3527): next two activities, Show All, then their calendar
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Activities by ${user.firstName}", style = onest(16.sp, FontWeight.SemiBold), color = c.textSecondary, modifier = Modifier.weight(1f))
+                        if (vm.activities.isNotEmpty()) {
+                            Text(
+                                "Show All", style = onest(15.sp, FontWeight.Medium), color = Palette.Indigo500,
+                                modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { showAll = true }.padding(horizontal = 4.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
+                    val upcoming = vm.upcoming
+                    if (upcoming.isEmpty()) {
                         Text("${user.firstName} doesn't have any upcoming activities.", style = onest(14.sp), color = c.placeholder)
                     }
-                    vm.activities.forEach { a -> ActivityCard(a, Spawn.colors.indexFor(a.id), onClick = { onOpenActivity(a) }) }
+                    upcoming.take(2).forEach { a -> ActivityCard(a, Spawn.colors.indexFor(a.id), onClick = { onOpenActivity(a) }) }
+                    Spacer(Modifier.height(4.dp))
+                    ActivityCalendar(
+                        vm.month, vm.calendar, onMonthChange = vm::changeMonth,
+                        onDay = { date, items -> vm.openDay(date, items, onOpenActivity) }, onOpenFull = null,
+                    )
                 } else {
                     LockedActivities(user.firstName)
                 }
@@ -172,6 +200,75 @@ fun UserProfileScreen(
     }
 
     if (pickingTypes) AddToActivityTypePage(vm, user, bottomPadding, onDismiss = { pickingTypes = false })
+    if (showAll) FriendActivitiesPage(vm, user.firstName, bottomPadding, onBack = { showAll = false }, onOpenActivity = onOpenActivity)
+    vm.dayDate?.let { date -> FriendDayPage(date, vm.dayActivities, bottomPadding, onBack = { vm.dayDate = null }, onOpenActivity = onOpenActivity) }
+}
+
+/** Figma "View Activities" (1320:11015, iOS FriendActivitiesShowAllView): upcoming cards, then past ones. */
+@Composable
+private fun FriendActivitiesPage(
+    vm: UserProfileViewModel,
+    firstName: String,
+    bottomPadding: Dp,
+    onBack: () -> Unit,
+    onOpenActivity: (FullFeedActivityDTO) -> Unit,
+) {
+    val c = SpawnTheme.colors
+    BackHandler(onBack = onBack)
+    Column(Modifier.fillMaxSize().background(c.background).clickable(remember { MutableInteractionSource() }, null) {}.statusBarsPadding()) {
+        SubPageHeader("Activities by $firstName", onBack)
+        LazyColumn(
+            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 4.dp, bottom = bottomPadding + 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item { Text("Upcoming Activities", style = onest(16.sp, FontWeight.SemiBold), color = c.textSecondary) }
+            if (vm.upcoming.isEmpty()) item { Text("No upcoming activities", style = onest(14.sp), color = c.placeholder) }
+            items(vm.upcoming, key = { it.id }) { a -> ActivityCard(a, Spawn.colors.indexFor(a.id), onClick = { onOpenActivity(a) }) }
+            item { Text("Past Activities", style = onest(16.sp, FontWeight.SemiBold), color = c.textSecondary, modifier = Modifier.padding(top = 8.dp)) }
+            if (vm.past.isEmpty()) item { Text("No past activities", style = onest(14.sp), color = c.placeholder) }
+            items(vm.past, key = { "past-" + it.id }) { a -> PastActivityCard(a, Spawn.colors.indexFor(a.id), onClick = { onOpenActivity(a) }) }
+        }
+    }
+}
+
+/** The compact past-activity card from Figma 1320:11015: title, place and date, who went. */
+@Composable
+private fun PastActivityCard(a: FullFeedActivityDTO, colorIndex: Int, onClick: () -> Unit) {
+    val date = Dates.parse(a.startTime)?.atZone(ZoneId.systemDefault())?.let { DateTimeFormatter.ofPattern("MMMM d", Locale.getDefault()).format(it) }
+    val place = a.location?.name?.let(Distance::shortLocation)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .drawBehind { drawRect(ActivityPalette.card(colorIndex, size.width, size.height)) }
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(a.title ?: "Activity", style = onest(17.sp, FontWeight.SemiBold), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.height(2.dp))
+            Text(listOfNotNull(place, date).joinToString(" • "), style = onest(13.sp), color = Color.White.copy(alpha = 0.85f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Spacer(Modifier.width(8.dp))
+        ParticipantsStack(a.participantUsers.orEmpty().ifEmpty { listOf(a.creatorUser) }, size = 32.dp)
+    }
+}
+
+/** A calendar day with several of their activities ("Events - <day>", Figma 1557:3742). */
+@Composable
+private fun FriendDayPage(date: LocalDate, activities: List<FullFeedActivityDTO>, bottomPadding: Dp, onBack: () -> Unit, onOpenActivity: (FullFeedActivityDTO) -> Unit) {
+    val c = SpawnTheme.colors
+    BackHandler(onBack = onBack)
+    Column(Modifier.fillMaxSize().background(c.background).clickable(remember { MutableInteractionSource() }, null) {}.statusBarsPadding()) {
+        SubPageHeader("Events - ${date.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${date.dayOfMonth}", onBack)
+        LazyColumn(
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = bottomPadding + 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            items(activities, key = { it.id }) { a -> ActivityCard(a, Spawn.colors.indexFor(a.id), onClick = { onOpenActivity(a) }) }
+        }
+    }
 }
 
 @Composable

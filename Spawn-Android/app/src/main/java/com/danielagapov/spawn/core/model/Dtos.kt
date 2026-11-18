@@ -123,6 +123,8 @@ data class FullFeedActivityDTO(
     val participationStatus: ParticipationStatus? = null,
     val isSelfOwned: Boolean? = null,
     val isExpired: Boolean? = null,
+    /** Set by activities/profile/{id} (ProfileActivityDTO). */
+    val isPastActivity: Boolean? = null,
     val createdAt: String? = null,
     val clientTimezone: String? = null,
 )
