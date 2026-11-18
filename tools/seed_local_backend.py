@@ -76,7 +76,13 @@ def ensure_user(username, name, bio):
         return user, token
     email = f"{username}@spawn.test"
     call("POST", "auth/register/verification/send", {"email": email})
-    subprocess.run(MYSQL + [f"UPDATE email_verification SET verification_code='{TEST_CODE_BCRYPT}' WHERE email='{email}'"], check=True)
+    # Local email sending usually fails (no mail credentials), and then the backend saves no
+    # verification row, so write it directly with the known test code.
+    subprocess.run(MYSQL + [
+        "INSERT INTO email_verification (id, check_attempts, send_attempts, email, verification_code, code_expires_at) "
+        f"VALUES (UUID_TO_BIN(UUID()), 0, 1, '{email}', '{TEST_CODE_BCRYPT}', UTC_TIMESTAMP() + INTERVAL 1 DAY) "
+        f"ON DUPLICATE KEY UPDATE verification_code='{TEST_CODE_BCRYPT}', check_attempts=0, code_expires_at=UTC_TIMESTAMP() + INTERVAL 1 DAY"
+    ], check=True)
     status, body, token = call("POST", "auth/register/verification/check", {"email": email, "verificationCode": TEST_CODE})
     if status != 200:
         sys.exit(f"verify {username} failed: {status} {body}")
@@ -98,11 +104,13 @@ def main():
     me, me_tok = accounts["alex"]
     print("users:", {u: a[0]["id"] for u, a in accounts.items()})
 
-    # Placeholder avatars (local DB only) so screenshots look like real accounts.
+    # Illustrated placeholder avatars (local DB only). These end up in the public Play
+    # Store screenshots, so they're drawings (DiceBear "Notionists", CC0), not photos of real people.
     import subprocess
-    avatars = {"alex": "men/32", "jamie": "women/44", "sam": "men/46", "omar": "men/75", "priya": "women/68", "jenna": "women/12", "maya": "women/65", "leo": "men/52"}
-    for u, a in avatars.items():
-        subprocess.run(MYSQL + [f"UPDATE user SET profile_picture_url_string='https://randomuser.me/api/portraits/{a}.jpg' WHERE username='{u}'"], check=True)
+    avatar_bg = {"alex": "c0aede", "jamie": "ffd5dc", "sam": "b6e3f4", "omar": "d1d4f9", "priya": "ffdfbf", "jenna": "c0aede", "maya": "b6e3f4", "leo": "ffd5dc"}
+    for u, bg in avatar_bg.items():
+        url = f"https://api.dicebear.com/9.x/notionists/png?seed={u}&size=256&backgroundColor={bg}"
+        subprocess.run(MYSQL + [f"UPDATE user SET profile_picture_url_string='{url}' WHERE username='{u}'"], check=True)
     subprocess.run(["redis-cli", "-p", "6380", "FLUSHALL"], capture_output=True)
 
     # Friendships: alex <-> everyone except jenna (jenna sends alex a request instead)
