@@ -7,6 +7,10 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- The activity is locked to portrait, which would otherwise make Play require a portrait
+         screen and hide the app from devices that report no fixed orientation. -->
+    <uses-feature android:name="android.hardware.screen.portrait" android:required="false" />
+
     <application
         android:name=".SpawnApplication"
         android:allowBackup="true"
