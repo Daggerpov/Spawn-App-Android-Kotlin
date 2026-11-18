@@ -1,5 +1,11 @@
 package com.danielagapov.spawn.ui.profile
 
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.graphics.Brush
+import com.danielagapov.spawn.core.session.Spawn
+import com.danielagapov.spawn.ui.components.ActivityCard
+import com.danielagapov.spawn.ui.components.LoadingBox
+import java.time.YearMonth
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -76,22 +82,37 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
-private enum class ProfilePage { Main, Edit, Settings, Blocked }
+private enum class ProfilePage { Main, Edit, Settings, Blocked, Calendar, Day }
 
 /** Profile tab (Figma "Your Profile", "Edit Profile", "Settings & Preferences"). */
 @Composable
 fun MyProfileTab(user: BaseUserDTO, onOpenActivity: (FullFeedActivityDTO) -> Unit, bottomPadding: Dp, vm: MyProfileViewModel = viewModel()) {
     val context = LocalContext.current
     var page by rememberSaveable { mutableStateOf(ProfilePage.Main) }
+    var dayBack by rememberSaveable { mutableStateOf(ProfilePage.Main) }
     LaunchedEffect(vm.toast) { vm.toast?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show(); vm.toast = null } }
-    BackHandler(page != ProfilePage.Main) { page = if (page == ProfilePage.Blocked) ProfilePage.Settings else ProfilePage.Main }
+    BackHandler(page != ProfilePage.Main) {
+        page = when (page) { ProfilePage.Blocked -> ProfilePage.Settings; ProfilePage.Day -> dayBack; else -> ProfilePage.Main }
+    }
+    // A day with one activity opens it; a day with more opens the "Events - <day>" list (Figma 1557:3742).
+    fun openDay(date: LocalDate, items: List<CalendarActivityDTO>, from: ProfilePage) {
+        when {
+            items.size == 1 -> vm.openCalendarActivity(items[0], onOpenActivity)
+            items.size > 1 -> { vm.openDay(date, items); dayBack = from; page = ProfilePage.Day }
+        }
+    }
 
     AnimatedContent(page, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "profile") { p ->
         when (p) {
-            ProfilePage.Main -> ProfileMain(user, vm, onOpenActivity, bottomPadding, onEdit = { page = ProfilePage.Edit }, onSettings = { page = ProfilePage.Settings })
+            ProfilePage.Main -> ProfileMain(
+                user, vm, bottomPadding, onEdit = { page = ProfilePage.Edit }, onSettings = { page = ProfilePage.Settings },
+                onDay = { date, items -> openDay(date, items, ProfilePage.Main) }, onFullCalendar = { page = ProfilePage.Calendar },
+            )
             ProfilePage.Edit -> EditProfile(user, vm, bottomPadding, onClose = { page = ProfilePage.Main })
             ProfilePage.Settings -> SettingsPage(vm, bottomPadding, onBack = { page = ProfilePage.Main }, onBlocked = { vm.loadBlocked(); page = ProfilePage.Blocked })
             ProfilePage.Blocked -> BlockedUsersPage(vm, bottomPadding, onBack = { page = ProfilePage.Settings })
+            ProfilePage.Calendar -> CalendarPage(vm, bottomPadding, onBack = { page = ProfilePage.Main }, onDay = { date, items -> openDay(date, items, ProfilePage.Calendar) })
+            ProfilePage.Day -> DayActivitiesPage(vm, bottomPadding, onBack = { page = dayBack }, onOpenActivity = onOpenActivity)
         }
     }
 }
@@ -101,10 +122,11 @@ fun MyProfileTab(user: BaseUserDTO, onOpenActivity: (FullFeedActivityDTO) -> Uni
 private fun ProfileMain(
     user: BaseUserDTO,
     vm: MyProfileViewModel,
-    onOpenActivity: (FullFeedActivityDTO) -> Unit,
     bottomPadding: Dp,
     onEdit: () -> Unit,
     onSettings: () -> Unit,
+    onDay: (LocalDate, List<CalendarActivityDTO>) -> Unit,
+    onFullCalendar: () -> Unit,
 ) {
     val c = SpawnTheme.colors
     val context = LocalContext.current
@@ -142,7 +164,7 @@ private fun ProfileMain(
         Spacer(Modifier.height(28.dp))
         InterestsCard(vm.interests, vm.socials, showSocials = true, firstName = "You", modifier = Modifier.padding(horizontal = 32.dp))
         Spacer(Modifier.height(28.dp))
-        ActivityCalendar(vm, onOpen = { item -> vm.openCalendarActivity(item, onOpenActivity) }, modifier = Modifier.padding(horizontal = 32.dp))
+        ActivityCalendar(vm, onDay = onDay, onOpenFull = onFullCalendar, modifier = Modifier.padding(horizontal = 32.dp))
     }
 }
 
@@ -180,7 +202,12 @@ private fun Stat(icon: ImageVector, value: Int?, label: String) {
 
 /** Month grid from the Figma: gray squares, colored squares with the activity's emoji, dashed padding days. */
 @Composable
-private fun ActivityCalendar(vm: MyProfileViewModel, onOpen: (CalendarActivityDTO) -> Unit, modifier: Modifier = Modifier) {
+private fun ActivityCalendar(
+    vm: MyProfileViewModel,
+    onDay: (LocalDate, List<CalendarActivityDTO>) -> Unit,
+    onOpenFull: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val c = SpawnTheme.colors
     val month = vm.month
     val byDay = vm.calendar.groupBy { runCatching { LocalDate.parse(it.date.take(10)) }.getOrNull() }
@@ -191,10 +218,17 @@ private fun ActivityCalendar(vm: MyProfileViewModel, onOpen: (CalendarActivityDT
     val today = LocalDate.now()
     Column(modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "${month.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${month.year}",
-                style = onest(16.sp, FontWeight.SemiBold), color = c.textSecondary, modifier = Modifier.weight(1f),
-            )
+            // Tapping the month opens the full "Your Event Calendar" page (Figma 1321:11975, iOS ActivityCalendarView)
+            Row(
+                Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable(onClickLabel = "Open calendar", onClick = onOpenFull).padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "${month.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${month.year}",
+                    style = onest(16.sp, FontWeight.SemiBold), color = c.textSecondary,
+                )
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = c.textSecondary, modifier = Modifier.size(20.dp))
+            }
             IconButton(onClick = { vm.changeMonth(-1) }, modifier = Modifier.size(32.dp)) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous month", tint = c.textSecondary) }
             IconButton(onClick = { vm.changeMonth(1) }, modifier = Modifier.size(32.dp)) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next month", tint = c.textSecondary) }
         }
@@ -221,7 +255,7 @@ private fun ActivityCalendar(vm: MyProfileViewModel, onOpen: (CalendarActivityDT
                         } else {
                             val date = month.atDay(day)
                             val items = byDay[date].orEmpty()
-                            val color = items.firstOrNull()?.let { it.colorHexCode?.let { h -> hexColor(h) } ?: ActivityPalette.color((it.activityId ?: it.id).hashCode()) }
+                            val color = items.firstOrNull()?.let(::calendarColor)
                             Box(
                                 Modifier
                                     .fillMaxSize()
@@ -229,7 +263,7 @@ private fun ActivityCalendar(vm: MyProfileViewModel, onOpen: (CalendarActivityDT
                                     .clip(RoundedCornerShape(6.dp))
                                     .background(color ?: gray)
                                     .then(if (date == today) Modifier.border(2.dp, Palette.Indigo500, RoundedCornerShape(6.dp)) else Modifier)
-                                    .clickable(enabled = items.isNotEmpty()) { onOpen(items.first()) },
+                                    .clickable(enabled = items.isNotEmpty()) { onDay(date, items) },
                                 contentAlignment = Alignment.Center,
                             ) {
                                 when {
@@ -242,6 +276,107 @@ private fun ActivityCalendar(vm: MyProfileViewModel, onOpen: (CalendarActivityDT
                 }
             }
             Spacer(Modifier.height(6.dp))
+        }
+    }
+}
+private fun calendarColor(item: CalendarActivityDTO): Color =
+    item.colorHexCode?.let { hexColor(it) } ?: ActivityPalette.color((item.activityId ?: item.id).hashCode())
+
+@Composable
+private fun SubPageHeader(title: String, onBack: () -> Unit) {
+    val c = SpawnTheme.colors
+    Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp)) {
+        IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = c.heading) }
+        Text(title, style = onest(20.sp, FontWeight.SemiBold), color = c.heading, modifier = Modifier.align(Alignment.Center))
+    }
+}
+
+/** Figma "Your Event Calendar" (1321:11975 / 1321:12496): scrollable months of day tiles, four per row. */
+@Composable
+private fun CalendarPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -> Unit, onDay: (LocalDate, List<CalendarActivityDTO>) -> Unit) {
+    LaunchedEffect(Unit) { vm.loadCalendarMonths() }
+    val listState = rememberLazyListState()
+    val months = vm.calendarMonths
+    LaunchedEffect(months.isNotEmpty()) {
+        val current = months.indexOfFirst { it.first == YearMonth.now() }
+        if (current > 0) listState.scrollToItem(current)
+    }
+    Column(Modifier.fillMaxSize().statusBarsPadding()) {
+        SubPageHeader("Your Event Calendar", onBack)
+        if (months.isEmpty()) LoadingBox()
+        LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 4.dp, bottom = bottomPadding + 16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            items(months, key = { it.first.toString() }) { (month, items) -> CalendarMonthGrid(month, items, onDay) }
+        }
+    }
+}
+
+@Composable
+private fun CalendarMonthGrid(month: YearMonth, items: List<CalendarActivityDTO>, onDay: (LocalDate, List<CalendarActivityDTO>) -> Unit) {
+    val c = SpawnTheme.colors
+    val byDay = remember(items) { items.groupBy { runCatching { LocalDate.parse(it.date.take(10)) }.getOrNull() } }
+    val today = LocalDate.now()
+    val gray = if (c.isDark) Palette.Gray700 else Color(0xFFE6E2E2)
+    val days = month.lengthOfMonth()
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            "${month.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${month.year}",
+            style = onest(16.sp, FontWeight.SemiBold), color = c.textSecondary,
+        )
+        Spacer(Modifier.height(12.dp))
+        for (row in 0 until (days + 3) / 4) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                for (col in 0 until 4) {
+                    val day = row * 4 + col + 1
+                    Box(Modifier.weight(1f).aspectRatio(1f)) {
+                        if (day <= days) {
+                            val date = month.atDay(day)
+                            val dayItems = byDay[date].orEmpty()
+                            val color = dayItems.firstOrNull()?.let(::calendarColor)
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .shadow(2.dp, RoundedCornerShape(10.dp))
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(color?.let { Brush.linearGradient(listOf(it.copy(alpha = 0.7f), it)) } ?: SolidColor(gray))
+                                    .then(if (date == today) Modifier.border(2.dp, Palette.Indigo500, RoundedCornerShape(10.dp)) else Modifier)
+                                    .clickable(enabled = dayItems.isNotEmpty()) { onDay(date, dayItems) },
+                            ) {
+                                when {
+                                    dayItems.size > 1 -> Text(dayItems.take(2).joinToString("") { it.icon ?: "⭐️" }, fontSize = 24.sp, modifier = Modifier.align(Alignment.Center))
+                                    dayItems.size == 1 -> Text(dayItems[0].icon ?: "⭐️", fontSize = 36.sp, modifier = Modifier.align(Alignment.Center))
+                                }
+                                Text(
+                                    "$day", style = onest(11.sp, FontWeight.Medium), color = if (color != null) Color.White else Palette.Gray500,
+                                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 7.dp, bottom = 5.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+        }
+    }
+}
+
+/** Figma "Events - May 16" (1557:3742, iOS DayActivitiesPageView): every activity on that day. */
+@Composable
+private fun DayActivitiesPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -> Unit, onOpenActivity: (FullFeedActivityDTO) -> Unit) {
+    val title = vm.dayDate?.let { "Events - ${it.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${it.dayOfMonth}" } ?: "Events"
+    Column(Modifier.fillMaxSize().statusBarsPadding()) {
+        SubPageHeader(title, onBack)
+        LazyColumn(
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = bottomPadding + 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            if (vm.dayLoading) item { LoadingBox() }
+            items(vm.dayActivities, key = { it.id }) { a ->
+                ActivityCard(a, Spawn.colors.indexFor(a.id), onClick = { onOpenActivity(a) })
+            }
         }
     }
 }

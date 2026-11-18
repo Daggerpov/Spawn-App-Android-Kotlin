@@ -15,11 +15,13 @@ import com.danielagapov.spawn.core.network.friendlyMessage
 import com.danielagapov.spawn.core.session.Spawn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
+import java.time.LocalDate
 import java.time.YearMonth
 
 /** Your own profile + settings (iOS ProfileViewModel / EditProfileView / SettingsView). */
@@ -61,6 +63,36 @@ class MyProfileViewModel : ViewModel() {
         viewModelScope.launch {
             runCatching { Spawn.api.calendar(me, m.monthValue, m.year, java.util.TimeZone.getDefault().id).bodyOrThrow() }
                 .onSuccess { if (m == month) calendar = it }
+        }
+    }
+
+    // Full "Your Event Calendar" page (Figma 1321:11975): six months back through three ahead.
+    var calendarMonths by mutableStateOf<List<Pair<YearMonth, List<CalendarActivityDTO>>>>(emptyList()); private set
+
+    fun loadCalendarMonths() {
+        val now = YearMonth.now()
+        val tz = java.util.TimeZone.getDefault().id
+        viewModelScope.launch {
+            calendarMonths = (-6L..3L).map { now.plusMonths(it) }.map { m ->
+                async { m to (runCatching { Spawn.api.calendar(me, m.monthValue, m.year, tz).bodyOrThrow() }.getOrNull() ?: emptyList()) }
+            }.awaitAll()
+        }
+    }
+
+    // "Events - <day>" page (Figma 1557:3742) for a calendar day with more than one activity.
+    var dayDate by mutableStateOf<LocalDate?>(null); private set
+    var dayActivities by mutableStateOf<List<FullFeedActivityDTO>>(emptyList()); private set
+    var dayLoading by mutableStateOf(false); private set
+
+    fun openDay(date: LocalDate, items: List<CalendarActivityDTO>) {
+        dayDate = date
+        dayActivities = emptyList()
+        dayLoading = true
+        viewModelScope.launch {
+            dayActivities = items.mapNotNull { it.activityId }.distinct()
+                .map { id -> async { runCatching { Spawn.api.activity(id, me).bodyOrThrow() }.getOrNull() } }
+                .awaitAll().filterNotNull()
+            dayLoading = false
         }
     }
 
