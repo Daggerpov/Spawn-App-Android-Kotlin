@@ -2,12 +2,17 @@ package com.danielagapov.spawn.ui.auth
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -24,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
@@ -43,6 +49,7 @@ import com.danielagapov.spawn.ui.components.SpawnTextField
 import com.danielagapov.spawn.ui.theme.Palette
 import com.danielagapov.spawn.ui.theme.SpawnTheme
 import com.danielagapov.spawn.ui.theme.onest
+import kotlinx.coroutines.launch
 
 @Composable
 private fun AuthScaffold(
@@ -104,6 +111,83 @@ fun WelcomeScreen(onGetStarted: () -> Unit) {
         Spacer(Modifier.weight(1.2f))
         PrimaryButton("Get Started", onGetStarted)
         Spacer(Modifier.height(8.dp))
+    }
+}
+
+private class IntroPage(val title: String, val body: String, val image: Int, val darkImage: Int)
+
+private val introPages = listOf(
+    IntroPage(
+        "Stay in the Loop", "Know what your friends are up to—so you can jump in or start something new.",
+        R.drawable.intro_activity_cards, R.drawable.intro_activity_cards_dark,
+    ),
+    IntroPage(
+        "Set the Vibe", "Quick-start your plans with activity presets — or make one that fits you.",
+        R.drawable.intro_activity_types, R.drawable.intro_activity_types_dark,
+    ),
+    IntroPage(
+        "What’s Happening\nNear You", "Easily spot nearby hangouts, meetups, or last-minute plans worth joining.",
+        R.drawable.intro_map_pins, R.drawable.intro_map_pins,
+    ),
+)
+
+/**
+ * Figma intro pages "Stay in the Loop" (2373:3721), "Set the Vibe" (2232:4452) and "What's Happening Near You"
+ * (438:2639), with the iOS SpawnIntroView artwork. Swipe or tap Next; Next on the last page goes on to sign in.
+ */
+@Composable
+fun IntroScreen(onBack: () -> Unit, onDone: () -> Unit) {
+    val c = SpawnTheme.colors
+    val pager = rememberPagerState { introPages.size }
+    val scope = rememberCoroutineScope()
+    fun goTo(page: Int) { scope.launch { pager.animateScrollToPage(page) } }
+    BackHandler(pager.currentPage > 0) { goTo(pager.currentPage - 1) }
+
+    Column(
+        Modifier.fillMaxSize().background(c.background).systemBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(Modifier.height(56.dp).fillMaxWidth().padding(horizontal = 12.dp)) {
+            IconButton(
+                onClick = { if (pager.currentPage > 0) goTo(pager.currentPage - 1) else onBack() },
+                modifier = Modifier.align(Alignment.CenterStart),
+            ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = c.text) }
+        }
+        Image(painterResource(R.drawable.spawn_wordmark), "Spawn", modifier = Modifier.width(84.dp))
+        HorizontalPager(pager, Modifier.weight(1f).fillMaxWidth()) { i ->
+            val page = introPages[i]
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Image(
+                        painterResource(if (c.isDark) page.darkImage else page.image), null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp),
+                    )
+                }
+                // Fixed height so the dots and button don't move when a title wraps.
+                Column(Modifier.height(170.dp).padding(horizontal = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(page.title, style = onest(28.sp, FontWeight.SemiBold), color = c.text, textAlign = TextAlign.Center)
+                    Spacer(Modifier.height(8.dp))
+                    Text(page.body, style = onest(17.sp), color = c.text, textAlign = TextAlign.Center)
+                }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            repeat(introPages.size) { i ->
+                val width by animateDpAsState(if (i == pager.currentPage) 20.dp else 6.dp, label = "dot")
+                Box(
+                    Modifier.size(width, 6.dp).clip(CircleShape)
+                        .background(if (i == pager.currentPage) Palette.Indigo500 else c.placeholder),
+                )
+            }
+        }
+        Spacer(Modifier.height(64.dp))
+        PrimaryButton(
+            "Next",
+            { if (pager.currentPage < introPages.lastIndex) goTo(pager.currentPage + 1) else onDone() },
+            modifier = Modifier.padding(horizontal = 24.dp),
+        )
+        Spacer(Modifier.height(24.dp))
     }
 }
 
