@@ -1,5 +1,8 @@
 package com.danielagapov.spawn.ui.profile
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.ui.graphics.Brush
 import com.danielagapov.spawn.ui.components.InAppBanners
 import android.content.Intent
 import android.net.Uri
@@ -20,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.HowToReg
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Schedule
@@ -169,7 +171,7 @@ fun UserProfileScreen(
         }
     }
 
-    if (pickingTypes) AddToActivityTypeSheet(vm, user, onDismiss = { pickingTypes = false })
+    if (pickingTypes) AddToActivityTypePage(vm, user, bottomPadding, onDismiss = { pickingTypes = false })
 }
 
 @Composable
@@ -283,31 +285,43 @@ private fun LockedActivities(firstName: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Icon(Icons.Default.Lock, null, tint = c.placeholder, modifier = Modifier.size(24.dp))
+        Icon(Icons.Outlined.AutoAwesome, null, tint = c.placeholder, modifier = Modifier.size(24.dp))
         Spacer(Modifier.height(10.dp))
-        Text("Add $firstName to see their\nupcoming activities!", style = onest(14.sp, FontWeight.Medium), color = c.placeholder, textAlign = TextAlign.Center)
+        Text("Add $firstName to see their\nupcoming spawns!", style = onest(14.sp, FontWeight.Medium), color = c.placeholder, textAlign = TextAlign.Center)
     }
 }
 
-/** Figma "Add Friend to Tag": pick which of your activity types this friend belongs to. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Figma "Add Friend to Tag" (1434:6762): a full page to pick which of your activity types this friend belongs to. */
 @Composable
-private fun AddToActivityTypeSheet(vm: UserProfileViewModel, user: BaseUserDTO, onDismiss: () -> Unit) {
+private fun AddToActivityTypePage(vm: UserProfileViewModel, user: BaseUserDTO, bottomPadding: Dp, onDismiss: () -> Unit) {
     val c = SpawnTheme.colors
     var selected by remember(vm.types) { mutableStateOf(vm.typesContainingUser()) }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.surface) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).navigationBarsPadding(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Add to Activity Type", style = onest(20.sp, FontWeight.SemiBold), color = c.heading)
+    BackHandler(onBack = onDismiss)
+    Box(Modifier.fillMaxSize().background(c.background).clickable(remember { MutableInteractionSource() }, null) {}) {
+        Column(
+            Modifier.fillMaxSize().statusBarsPadding().padding(start = 24.dp, end = 24.dp, bottom = bottomPadding + 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
+                IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.CenterStart).offset(x = (-12).dp)) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = c.heading)
+                }
+                Text("Add to Activity Type", style = onest(20.sp, FontWeight.SemiBold), color = c.heading, modifier = Modifier.align(Alignment.Center))
+            }
             Spacer(Modifier.height(16.dp))
-            UserAvatar(user, 56.dp)
-            Spacer(Modifier.height(8.dp))
+            Box(
+                Modifier
+                    .border(2.5.dp, Brush.sweepGradient(listOf(Palette.Indigo500, Color(0xFFFF6B9D), Color(0xFF5EE6C8), Palette.Indigo500)), CircleShape)
+                    .padding(5.dp),
+            ) { UserAvatar(user, 72.dp) }
+            Spacer(Modifier.height(12.dp))
             Text(
                 if (selected.isEmpty()) "Where do you want to put ${user.firstName}?" else "Adding ${user.firstName} to ${selected.size} activity type${if (selected.size == 1) "" else "s"}",
                 style = onest(15.sp, FontWeight.SemiBold), color = c.text,
             )
-            Text("Tap to select / deselect", style = onest(12.sp), color = c.textSecondary)
-            Spacer(Modifier.height(16.dp))
-            LazyVerticalGrid(GridCells.Fixed(3), Modifier.heightIn(max = 380.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Tap an activity type to get started", style = onest(13.sp), color = c.textSecondary)
+            Spacer(Modifier.height(20.dp))
+            LazyVerticalGrid(GridCells.Fixed(3), Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(vm.types, key = { it.id }) { t ->
                     val on = t.id in selected
                     Column(
@@ -328,9 +342,8 @@ private fun AddToActivityTypeSheet(vm: UserProfileViewModel, user: BaseUserDTO, 
                     }
                 }
             }
-            Spacer(Modifier.height(20.dp))
-            PrimaryButton("Save", { vm.saveTypes(selected, onDismiss) }, loading = vm.busy)
             Spacer(Modifier.height(16.dp))
+            PrimaryButton("Save", { vm.saveTypes(selected, onDismiss) }, loading = vm.busy)
         }
     }
 }

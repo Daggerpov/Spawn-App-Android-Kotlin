@@ -1,5 +1,13 @@
 package com.danielagapov.spawn.ui.friends
 
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.Feedback
+import androidx.compose.material.icons.outlined.IosShare
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.PersonRemove
+import androidx.compose.material.icons.outlined.Sell
+import androidx.compose.ui.graphics.vector.ImageVector
 import android.os.Build
 import com.danielagapov.spawn.ui.components.InAppBanners
 import android.content.ClipData
@@ -275,18 +283,19 @@ fun UserActionsMenu(
 ) {
     DropdownMenu(expanded, onDismiss, shape = RoundedCornerShape(12.dp)) {
         @Composable
-        fun item(label: String, danger: Boolean = false, action: () -> Unit) = DropdownMenuItem(
+        fun item(label: String, icon: ImageVector, danger: Boolean = false, action: () -> Unit) = DropdownMenuItem(
             text = { Text(label, style = onest(15.sp, FontWeight.Medium), color = if (danger) Palette.Red600 else SpawnTheme.colors.text) },
+            trailingIcon = { Icon(icon, null, tint = if (danger) Palette.Red600 else SpawnTheme.colors.text, modifier = Modifier.size(20.dp)) },
             onClick = { onDismiss(); action() },
         )
-        onViewProfile?.let { item("View profile", action = it) }
-        if (isFriend) onAddToType?.let { item("Add to Activity Type", action = it) }
-        if (isFriend) onRemove?.let { item("Remove as friend", action = it) }
-        item("Copy profile URL") { copyProfileUrl(context, user) }
-        item("Share this Profile") { shareProfile(context, user) }
+        onViewProfile?.let { item("View profile", Icons.Outlined.AccountCircle, action = it) }
+        if (isFriend) onAddToType?.let { item("Add to Activity Type", Icons.Outlined.Sell, action = it) }
+        if (isFriend) onRemove?.let { item("Remove as friend", Icons.Outlined.PersonRemove, action = it) }
+        item("Copy profile URL", Icons.Outlined.Link) { copyProfileUrl(context, user) }
+        item("Share this Profile", Icons.Outlined.IosShare) { shareProfile(context, user) }
         HorizontalDivider()
-        item("Report user", danger = true, action = onReport)
-        item("Block user", danger = true, action = onBlock)
+        item("Report user", Icons.Outlined.Feedback, danger = true, action = onReport)
+        item("Block user", Icons.Outlined.Block, danger = true, action = onBlock)
     }
 }
 

@@ -1,5 +1,9 @@
 package com.danielagapov.spawn.ui.profile
 
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.VisualTransformation
 import com.danielagapov.spawn.ui.components.InAppBanners
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.graphics.Brush
@@ -464,9 +468,9 @@ private fun EditProfile(user: BaseUserDTO, vm: MyProfileViewModel, bottomPadding
             }
         }
         FieldLabel("Third party apps")
-        SocialField(com.danielagapov.spawn.R.drawable.social_instagram, instagram, { instagram = it.trim() }, "Instagram username", Color(0xFFD62976), KeyboardType.Text)
+        SocialField(com.danielagapov.spawn.R.drawable.social_instagram, instagram, { instagram = it.trim().removePrefix("@") }, "Instagram username", Color(0xFFD62976), KeyboardType.Text, prefix = "@")
         Spacer(Modifier.height(10.dp))
-        SocialField(com.danielagapov.spawn.R.drawable.social_whatsapp, whatsapp, { whatsapp = it }, "WhatsApp number", Palette.Green500, KeyboardType.Phone)
+        SocialField(com.danielagapov.spawn.R.drawable.social_whatsapp, whatsapp, { whatsapp = it }, "WhatsApp number", Palette.Green500, KeyboardType.Phone, transformation = PhoneSpacing)
     }
 }
 
@@ -510,7 +514,16 @@ private fun OutlinedInput(
 }
 
 @Composable
-private fun SocialField(icon: Int, value: String, onChange: (String) -> Unit, placeholder: String, accent: Color, keyboardType: KeyboardType) {
+private fun SocialField(
+    icon: Int,
+    value: String,
+    onChange: (String) -> Unit,
+    placeholder: String,
+    accent: Color,
+    keyboardType: KeyboardType,
+    prefix: String? = null,
+    transformation: VisualTransformation = VisualTransformation.None,
+) {
     val c = SpawnTheme.colors
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).border(1.dp, accent, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 8.dp),
@@ -518,6 +531,7 @@ private fun SocialField(icon: Int, value: String, onChange: (String) -> Unit, pl
     ) {
         androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(icon), null, modifier = Modifier.size(36.dp).clip(RoundedCornerShape(8.dp)))
         Spacer(Modifier.width(12.dp))
+        if (prefix != null && value.isNotEmpty()) Text(prefix, style = onest(16.sp, FontWeight.SemiBold), color = c.text)
         Box(Modifier.weight(1f)) {
             if (value.isEmpty()) Text(placeholder, style = onest(16.sp), color = c.placeholder)
             BasicTextField(
@@ -525,6 +539,7 @@ private fun SocialField(icon: Int, value: String, onChange: (String) -> Unit, pl
                 textStyle = onest(16.sp, FontWeight.SemiBold).copy(color = c.text),
                 cursorBrush = SolidColor(Palette.Indigo500),
                 keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                visualTransformation = transformation,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -655,3 +670,24 @@ private fun BlockedUsersPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: 
     }
 }
 // endregion
+
+/** Shows North American numbers with spaces ("+1 604 555 1001", "604 555 1001") without changing the stored value. */
+private object PhoneSpacing : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val s = text.text
+        val withCountry = Regex("^\\+1\\d{10}$").matches(s)
+        val local = Regex("^\\d{10}$").matches(s)
+        if (!withCountry && !local) return TransformedText(text, OffsetMapping.Identity)
+        val cuts = if (withCountry) listOf(2, 5, 8) else listOf(3, 6)
+        val out = buildString { s.forEachIndexed { i, ch -> if (i in cuts) append(' '); append(ch) } }
+        val mapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int) = offset + cuts.count { it < offset }
+            override fun transformedToOriginal(offset: Int): Int {
+                var o = offset
+                cuts.forEachIndexed { i, cut -> if (offset > cut + i) o-- }
+                return o.coerceIn(0, s.length)
+            }
+        }
+        return TransformedText(AnnotatedString(out), mapping)
+    }
+}
