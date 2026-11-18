@@ -147,7 +147,7 @@ private fun MainScaffold(user: BaseUserDTO) {
                 onSeeAllActivities = { tab = Tab.Map },
                 bottomPadding = bottomPad,
             )
-            Tab.Map -> MapTab(homeVm.activities, onOpenActivity = { openActivity = it }, bottomPadding = bottomPad)
+            Tab.Map -> MapTab(homeVm.activities, onOpenActivity = { openActivity = it }, bottomPadding = bottomPad, selectedId = openActivity?.id)
             Tab.Activities -> CreateActivityFlow(createVm, onDone = { tab = Tab.Home }, bottomPadding = bottomPad)
             Tab.Friends -> FriendsTab(friendsVm, onOpenProfile = openProfile, bottomPadding = bottomPad)
             Tab.Profile -> MyProfileTab(user, onOpenActivity = { openActivity = it }, bottomPadding = bottomPad)
@@ -162,7 +162,7 @@ private fun MainScaffold(user: BaseUserDTO) {
     }
 
     openActivity?.let { a ->
-        ActivityDetailSheet(a, onDismiss = { openActivity = null }, onOpenProfile = openProfile)
+        ActivityDetailSheet(a, onDismiss = { openActivity = null }, onOpenProfile = openProfile, fromMap = tab == Tab.Map && profileTarget == null)
     }
 }
 

@@ -1,5 +1,14 @@
 package com.danielagapov.spawn.ui.activity
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.Velocity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -72,14 +81,26 @@ fun ActivityDetailSheet(
     onDismiss: () -> Unit,
     onOpenProfile: (BaseUserDTO) -> Unit,
     startInChat: Boolean = false,
+    fromMap: Boolean = false,
     vm: ActivityDetailViewModel = viewModel(key = "activity-${initial.id}"),
 ) {
     LaunchedEffect(initial.id) { vm.open(initial) }
     val a = vm.activity ?: initial
     val colorIndex = Spawn.colors.indexFor(a.id)
     val context = LocalContext.current
-    var page by remember { mutableStateOf(if (startInChat) Page.Chat else Page.Detail) }
+    val pageState = remember { mutableStateOf(if (startInChat) Page.Chat else Page.Detail) }
+    var page by pageState
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // Figma: the drawer opens at about 60% height (a bit lower over the map so the pin stays visible) and
+    // expands to the full screen with the expand button or a swipe up. Swiping down at the top collapses it again.
+    val expandedState = rememberSaveable { mutableStateOf(startInChat) }
+    var expanded by expandedState
+    val full = expanded || page != Page.Detail
+    val heightFraction by animateFloatAsState(
+        when { full -> 1f; fromMap -> 0.56f; else -> 0.64f }, animationSpec = tween(320), label = "drawerHeight",
+    )
+    val corner by animateDpAsState(if (full) 0.dp else 28.dp, animationSpec = tween(320), label = "drawerCorner")
+    val swipeToResize = remember { DrawerSwipeConnection(expandedState) { pageState.value == Page.Detail } }
 
     LaunchedEffect(vm.message) {
         vm.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show(); vm.message = null }
@@ -92,13 +113,14 @@ fun ActivityDetailSheet(
         containerColor = Color.Transparent,
         dragHandle = null,
         contentWindowInsets = { WindowInsets(0) },
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        shape = RoundedCornerShape(topStart = corner, topEnd = corner),
     ) {
         Box(
             Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.92f)
-                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .fillMaxHeight(heightFraction)
+                .nestedScroll(swipeToResize)
+                .clip(RoundedCornerShape(topStart = corner, topEnd = corner))
                 .drawBehind {
                     drawRect(
                         Brush.radialGradient(
@@ -109,8 +131,14 @@ fun ActivityDetailSheet(
                     )
                 },
         ) {
-            Column(Modifier.fillMaxSize().navigationBarsPadding().imePadding()) {
-                Box(Modifier.fillMaxWidth().padding(top = 10.dp), contentAlignment = Alignment.Center) {
+            Column(Modifier.fillMaxSize().then(if (full) Modifier.statusBarsPadding() else Modifier).navigationBarsPadding().imePadding()) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = page == Page.Detail, onClickLabel = if (expanded) "Collapse" else "Expand") { expanded = !expanded }
+                        .padding(top = 10.dp, bottom = 4.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
                     Box(Modifier.size(40.dp, 5.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.6f)))
                 }
                 AnimatedContent(
@@ -122,7 +150,11 @@ fun ActivityDetailSheet(
                     label = "page",
                 ) { p ->
                     when (p) {
-                        Page.Detail -> DetailPage(a, vm, colorIndex, onClose = onDismiss, onPeople = { page = Page.People }, onChat = { page = Page.Chat }, onDeleted = onDismiss)
+                        Page.Detail -> DetailPage(
+                            a, vm, colorIndex, expanded = expanded, fromMap = fromMap,
+                            onExpand = { expanded = true }, onClose = onDismiss,
+                            onPeople = { page = Page.People }, onChat = { page = Page.Chat }, onDeleted = onDismiss,
+                        )
                         Page.People -> PeoplePage(a, vm, onBack = { page = Page.Detail }, onOpenProfile = onOpenProfile)
                         Page.Chat -> ChatPage(a, vm, colorIndex, onBack = { page = Page.Detail })
                     }
@@ -131,6 +163,47 @@ fun ActivityDetailSheet(
         }
         BackHandler(enabled = page != Page.Detail) { page = Page.Detail }
     }
+}
+
+/**
+ * Resizes the activity drawer from swipes on its content: a swipe up while half open expands it, and a swipe
+ * down while full and scrolled to the top collapses it. The fling of a handled swipe is consumed so the sheet
+ * doesn't also settle (a fast downward fling would otherwise dismiss it).
+ */
+private class DrawerSwipeConnection(
+    private val expanded: MutableState<Boolean>,
+    private val enabled: () -> Boolean,
+) : NestedScrollConnection {
+    private var handled = false
+
+    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+        if (source == NestedScrollSource.UserInput && enabled() && !expanded.value && available.y < -4f) {
+            expanded.value = true
+            handled = true
+        }
+        return if (handled) available else Offset.Zero
+    }
+
+    override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+        if (source == NestedScrollSource.UserInput && enabled() && expanded.value && available.y > 4f) {
+            expanded.value = false
+            handled = true
+        }
+        return if (handled) available else Offset.Zero
+    }
+
+    override suspend fun onPreFling(available: Velocity): Velocity = if (handled) available else Velocity.Zero
+
+    override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+        val wasHandled = handled
+        handled = false
+        return if (wasHandled) available else Velocity.Zero
+    }
+}
+
+fun openDirections(context: Context, loc: LocationDTO) {
+    val uri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}")
+    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
 }
 
 fun shareActivity(context: Context, a: FullFeedActivityDTO) {
@@ -159,6 +232,9 @@ private fun DetailPage(
     a: FullFeedActivityDTO,
     vm: ActivityDetailViewModel,
     colorIndex: Int,
+    expanded: Boolean,
+    fromMap: Boolean,
+    onExpand: () -> Unit,
     onClose: () -> Unit,
     onPeople: () -> Unit,
     onChat: () -> Unit,
@@ -174,8 +250,14 @@ private fun DetailPage(
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onClose, modifier = Modifier.offset(x = (-12).dp)) {
-                Icon(Icons.Filled.Close, "Close", tint = Color.White)
+            if (expanded) {
+                IconButton(onClick = onClose, modifier = Modifier.offset(x = (-12).dp)) {
+                    Icon(Icons.Filled.Close, "Close", tint = Color.White)
+                }
+            } else {
+                IconButton(onClick = onExpand, modifier = Modifier.offset(x = (-12).dp)) {
+                    Icon(Icons.Outlined.OpenInFull, "Expand", tint = Color.White)
+                }
             }
             Spacer(Modifier.weight(1f))
             Box {
@@ -233,7 +315,34 @@ private fun DetailPage(
             }
         }
         Spacer(Modifier.height(18.dp))
-        a.location?.let { l ->
+        if (fromMap) a.location?.let { l ->
+            // Figma "Map View - Select Event": the map is already behind the drawer, so show the address and directions
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.Black.copy(alpha = 0.12f))
+                    .padding(start = 14.dp, end = 10.dp, top = 12.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Outlined.PinDrop, null, tint = Color.White, modifier = Modifier.size(26.dp))
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(Distance.shortLocation(l.name), style = onest(15.sp, FontWeight.SemiBold), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Distance.between(loc, l)?.let { Text(it, style = onest(13.sp), color = Color.White.copy(alpha = 0.85f)) }
+                }
+                Spacer(Modifier.width(8.dp))
+                Row(
+                    Modifier.clip(RoundedCornerShape(10.dp)).background(Color.White).clickable { openDirections(context, l) }.padding(horizontal = 12.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Outlined.Directions, null, tint = accent, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Get Directions", style = onest(13.sp, FontWeight.SemiBold), color = accent)
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+        } else a.location?.let { l ->
             Box(Modifier.fillMaxWidth().height(170.dp).clip(RoundedCornerShape(16.dp)).background(Color.White.copy(alpha = 0.2f))) {
                 AsyncImage(
                     model = staticMapUrl(context, l), contentDescription = "Map of ${l.name}", contentScale = ContentScale.Crop,
