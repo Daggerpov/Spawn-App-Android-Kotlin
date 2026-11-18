@@ -1,5 +1,15 @@
 package com.danielagapov.spawn.ui.home
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import com.danielagapov.spawn.R
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -81,19 +91,49 @@ fun HomeScreen(
                 }
                 item { Spacer(Modifier.height(4.dp)); SectionHeader("See what’s happening", onClick = onSeeAllActivities) }
                 when {
-                    vm.loading && vm.activities.isEmpty() -> item { LoadingBox() }
+                    vm.loading && vm.activities.isEmpty() -> item { FeedSkeleton() }
                     vm.error != null && vm.activities.isEmpty() -> item { ErrorBanner(vm.error!!) { vm.load() } }
-                    vm.activities.isEmpty() -> item {
-                        EmptyState(
-                            "🌙", "No Activities Found",
-                            "We couldn't find any activities nearby.\nStart one yourself and be spontaneous!",
-                        ) { PrimaryButton("Create an Activity", { onQuickCreate(null) }, modifier = Modifier.width(240.dp)) }
-                    }
+                    vm.activities.isEmpty() -> item { FeedEmptyState(onCreate = { onQuickCreate(null) }) }
                     else -> items(vm.activities, key = { it.id }) { a ->
                         ActivityCard(a, Spawn.colors.indexFor(a.id), onClick = { onOpenActivity(a) }, modifier = Modifier.animateItem())
                     }
                 }
             }
+        }
+    }
+}
+
+/** Figma "Event Feed - Empty State" (1955:2874): map pin illustration, title and copy. */
+@Composable
+private fun FeedEmptyState(onCreate: () -> Unit) {
+    val c = SpawnTheme.colors
+    Column(Modifier.fillMaxWidth().padding(top = 32.dp, bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Image(painterResource(R.drawable.no_activities_found), contentDescription = null, modifier = Modifier.size(143.dp))
+        Spacer(Modifier.height(8.dp))
+        Text("No Activities Found", style = onest(32.sp, FontWeight.SemiBold), color = c.heading, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(12.dp))
+        Text(
+            "We couldn’t find any activities happening nearby. Start one yourself and be spontaneous!",
+            style = onest(16.sp), color = c.textSecondary, textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 8.dp),
+        )
+        Spacer(Modifier.height(20.dp))
+        PrimaryButton("Create an Activity", onCreate, modifier = Modifier.width(240.dp))
+    }
+}
+
+/** Figma loading state (1552:4702): three pulsing placeholder cards instead of a spinner. */
+@Composable
+private fun FeedSkeleton() {
+    val c = SpawnTheme.colors
+    val pulse by rememberInfiniteTransition(label = "skeleton").animateFloat(
+        initialValue = 1f, targetValue = 0.55f,
+        animationSpec = infiniteRepeatable(tween(800), RepeatMode.Reverse), label = "skeletonAlpha",
+    )
+    val fill = if (c.isDark) Color.White.copy(alpha = 0.08f) else Color(0xFFF2EEEE)
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth().alpha(pulse)) {
+        repeat(3) {
+            Box(Modifier.fillMaxWidth().height(116.dp).clip(RoundedCornerShape(12.dp)).background(fill))
         }
     }
 }
