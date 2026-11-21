@@ -1,6 +1,8 @@
 package com.danielagapov.spawn.ui.auth
 
 import android.content.Context
+import android.net.Uri
+import android.util.Base64
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,15 +19,19 @@ import com.danielagapov.spawn.core.network.ApiException
 import com.danielagapov.spawn.core.network.bodyOrThrow
 import com.danielagapov.spawn.core.network.friendlyMessage
 import com.danielagapov.spawn.core.session.Spawn
+import com.danielagapov.spawn.core.util.compressPhoto
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Auth + onboarding state machine (iOS UserAuthViewModel, trimmed to what Android needs):
  *  - email/username + password login
  *  - Google sign-in (Credential Manager) -> /auth/sign-in, or /auth/register/oauth for new users
- *  - email sign-up: send code -> verify -> username/password -> name -> accept terms
+ *  - email sign-up: send code -> verify -> username/phone/password -> name and photo -> accept terms
+ *  - Google sign-up skips the password: Google is how those users sign in (iOS UserDetailsInputView isOAuthUser)
  */
 class AuthViewModel : ViewModel() {
     var loading by mutableStateOf(false)
@@ -134,10 +140,10 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    fun submitAccountDetails(username: String, password: String?, phone: String?, onDone: () -> Unit) = launch {
+    fun submitAccountDetails(username: String, password: String?, phone: String, onDone: () -> Unit) = launch {
         val user = Spawn.currentUser ?: return@launch
         val u = username.trim().removePrefix("@")
-        if (!Regex("^[a-zA-Z0-9._]{3,30}$").matches(u)) {
+        if (!Regex("^[a-zA-Z0-9._-]{3,30}$").matches(u)) {
             error = "Usernames are 3–30 letters, numbers, dots or underscores."
             return@launch
         }
@@ -145,20 +151,46 @@ class AuthViewModel : ViewModel() {
             error = "Passwords need at least 8 characters."
             return@launch
         }
-        val updated = api.updateUserDetails(
-            UpdateUserDetailsDTO(id = user.id, username = u, phoneNumber = phone?.takeIf { it.isNotBlank() } ?: "", password = password)
-        ).bodyOrThrow()
-        Spawn.updateUser(updated)
-        onDone()
+        try {
+            val updated = api.updateUserDetails(
+                UpdateUserDetailsDTO(id = user.id, username = u, phoneNumber = phone, password = password)
+            ).bodyOrThrow()
+            Spawn.updateUser(updated)
+            onDone()
+        } catch (e: ApiException) {
+            error = when {
+                e.code == 409 && e.message.orEmpty().contains("phone", ignoreCase = true) ->
+                    "This phone number has already been used. Try signing in instead."
+                e.code == 409 -> "This username is taken. Existing users need to sign in."
+                e.code == 400 && e.message.orEmpty().contains("phone", ignoreCase = true) -> "Enter a valid phone number."
+                else -> e.message
+            }
+        }
     }
 
-    fun submitName(name: String, onDone: () -> Unit) = launch {
+    /** "Make It Yours": name plus an optional new photo. Without a pick the account keeps its Google photo (or gets the default). */
+    fun submitProfile(context: Context, name: String, photo: Uri?, onDone: () -> Unit) = launch {
         val user = Spawn.currentUser ?: return@launch
         if (name.isBlank()) {
             error = "What should your friends call you?"
             return@launch
         }
-        val updated = api.setOptionalDetails(user.id, OptionalDetailsDTO(name.trim())).bodyOrThrow()
+        val photoData = photo?.let { uri ->
+            withContext(Dispatchers.IO) { Base64.encodeToString(compressPhoto(context, uri), Base64.NO_WRAP) }
+        }
+        val updated = api.setOptionalDetails(user.id, OptionalDetailsDTO(name.trim(), photoData)).bodyOrThrow()
+        Spawn.updateUser(updated)
+        onDone()
+    }
+
+    /**
+     * Figma's "Skip for now": keep the account's name and photo. Email sign-ups start with their email as the name,
+     * so they fall back to the username rather than showing friends an email address.
+     */
+    fun skipProfile(onDone: () -> Unit) = launch {
+        val user = Spawn.currentUser ?: return@launch
+        val name = user.name?.takeUnless { it.isBlank() || "@" in it } ?: user.username
+        val updated = api.setOptionalDetails(user.id, OptionalDetailsDTO(name = name)).bodyOrThrow()
         Spawn.updateUser(updated)
         onDone()
     }

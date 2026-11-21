@@ -1,8 +1,16 @@
 package com.danielagapov.spawn.ui.auth
 
-import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
+import coil3.compose.AsyncImage
+import com.danielagapov.spawn.core.util.Phone
+import com.danielagapov.spawn.ui.components.Avatar
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -32,7 +40,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -57,6 +68,7 @@ private fun AuthScaffold(
     title: String,
     subtitle: String,
     error: String?,
+    trailing: (@Composable BoxScope.() -> Unit)? = null,
     bottom: @Composable ColumnScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -74,6 +86,7 @@ private fun AuthScaffold(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = SpawnTheme.colors.text)
                 }
             }
+            trailing?.invoke(this)
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             Spacer(Modifier.height(24.dp))
@@ -341,58 +354,106 @@ fun VerifyCodeScreen(vm: AuthViewModel, onBack: () -> Unit) {
     }
 }
 
+/**
+ * Figma "create account (user/pass)" (710:951) / iOS UserDetailsInputView. Google accounts sign in with Google,
+ * so they only add a username and phone number ("Complete Your Profile") and never make a Spawn password.
+ */
 @Composable
-fun AccountDetailsScreen(vm: AuthViewModel, needsPassword: Boolean, onDone: () -> Unit) {
+fun AccountDetailsScreen(vm: AuthViewModel, isOAuthUser: Boolean, onBack: () -> Unit, onDone: () -> Unit) {
     // New email accounts get the email as a placeholder username server-side; start empty instead (#52).
     var username by rememberSaveable { mutableStateOf(Spawn.currentUser?.username?.takeUnless { "@" in it } ?: "") }
     var phone by rememberSaveable { mutableStateOf("") }
     var pass by rememberSaveable { mutableStateOf("") }
     var confirm by rememberSaveable { mutableStateOf("") }
+    val needsPassword = !isOAuthUser
     val mismatch = needsPassword && confirm.isNotEmpty() && pass != confirm
-    val e164 = remember(phone) {
-        val digits = phone.filter { it.isDigit() }
-        when {
-            phone.trim().startsWith("+") -> "+$digits"
-            digits.length == 10 -> "+1$digits"
-            digits.length == 11 && digits.startsWith("1") -> "+$digits"
-            else -> "+$digits"
-        }
-    }
-    AuthScaffold(null, "Create Your Account", "Just a few details to get started.", vm.error, bottom = {
-        PrimaryButton(
-            "Continue",
-            { vm.submitAccountDetails(username, if (needsPassword) pass else null, e164, onDone) },
-            enabled = username.length >= 3 && phone.filter { it.isDigit() }.length >= 10 &&
-                (!needsPassword || (pass.length >= 8 && pass == confirm)),
-            loading = vm.loading,
-        )
-    }) {
+    BackHandler(onBack = onBack)
+    AuthScaffold(
+        onBack,
+        if (isOAuthUser) "Complete Your Profile" else "Create Your Account",
+        if (isOAuthUser) "Add a username and phone number to complete your account." else "Just a few details to get started.",
+        vm.error,
+        bottom = {
+            PrimaryButton(
+                "Continue",
+                { vm.submitAccountDetails(username, if (needsPassword) pass else null, Phone.e164(phone), onDone) },
+                enabled = username.length >= 3 && Phone.isComplete(phone) &&
+                    (!needsPassword || (pass.length >= 8 && pass == confirm)),
+                loading = vm.loading,
+            )
+        },
+    ) {
         SpawnTextField(username, { username = it.trim(); vm.clearError() }, "Create a unique nickname", label = "Username")
         Spacer(Modifier.height(16.dp))
-        SpawnTextField(phone, { phone = it; vm.clearError() }, "(604) 555-0123", label = "Phone Number", keyboardType = KeyboardType.Phone)
+        SpawnTextField(
+            phone, { phone = Phone.clean(it); vm.clearError() }, "(604) 555-0123", label = "Phone Number",
+            keyboardType = KeyboardType.Phone, visualTransformation = Phone.visualTransformation,
+        )
         if (needsPassword) {
             Spacer(Modifier.height(16.dp))
-            SpawnTextField(pass, { pass = it; vm.clearError() }, "Enter a strong password", label = "Password", isPassword = true)
+            SpawnTextField(
+                pass, { pass = it; vm.clearError() }, "Enter a strong password", label = "Password", isPassword = true,
+                error = if (pass.isNotEmpty() && pass.length < 8) "At least 8 characters" else null,
+            )
             Spacer(Modifier.height(16.dp))
-            SpawnTextField(confirm, { confirm = it }, "Re-enter password", label = "Confirm Password", isPassword = true, error = if (mismatch) "Passwords don’t match" else null)
+            SpawnTextField(confirm, { confirm = it }, "Re-enter password", label = "Confirm Password", isPassword = true, error = if (mismatch) "Please ensure that your passwords match." else null)
         }
     }
 }
 
+/**
+ * Figma "Make It Yours" (685:3801, 685:3297) / iOS UserOptionalDetailsInputView: photo and name.
+ * Google accounts arrive with their Google name and photo filled in. "Skip for now" keeps whatever the account has.
+ */
 @Composable
-fun NameScreen(vm: AuthViewModel, onDone: () -> Unit) {
+fun ProfileSetupScreen(vm: AuthViewModel, onDone: () -> Unit) {
+    val context = LocalContext.current
+    val user = Spawn.currentUser
     // Keep a real name (e.g. from Google) but never prefill the email (#52).
-    var name by rememberSaveable { mutableStateOf(Spawn.currentUser?.name?.takeUnless { "@" in it } ?: "") }
-    AuthScaffold(null, "What’s Your Name?", "This is how your friends will see you on Spawn.", vm.error, bottom = {
-        PrimaryButton("Continue", { vm.submitName(name, onDone) }, enabled = name.isNotBlank(), loading = vm.loading)
-    }) {
-        SpawnTextField(name, { name = it; vm.clearError() }, "Your name", label = "Name")
+    var name by rememberSaveable { mutableStateOf(user?.name?.takeUnless { "@" in it } ?: "") }
+    var photo by rememberSaveable { mutableStateOf<Uri?>(null) }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { if (it != null) photo = it }
+    AuthScaffold(
+        null, "Make It Yours", "Add a name and photo so your friends can find you easily.", vm.error,
+        trailing = {
+            Text(
+                "Skip for now", style = onest(14.sp, FontWeight.Medium), color = SpawnTheme.colors.textSecondary,
+                modifier = Modifier.align(Alignment.CenterEnd).clip(RoundedCornerShape(8.dp))
+                    .clickable(enabled = !vm.loading) { vm.skipProfile(onDone) }.padding(8.dp),
+            )
+        },
+        bottom = {
+            PrimaryButton("Continue", { vm.submitProfile(context, name, photo, onDone) }, enabled = name.isNotBlank(), loading = vm.loading)
+        },
+    ) {
+        Box(
+            Modifier
+                .align(Alignment.CenterHorizontally)
+                .size(124.dp)
+                .clickable(remember { MutableInteractionSource() }, null) {
+                    picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+        ) {
+            when {
+                photo != null -> AsyncImage(photo, "Profile photo", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape))
+                !user?.profilePicture.isNullOrBlank() -> Avatar(user?.profilePicture, name, 124.dp)
+                else -> Box(
+                    Modifier.fillMaxSize().clip(CircleShape).background(SpawnTheme.colors.input),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.Filled.Person, null, tint = SpawnTheme.colors.placeholder, modifier = Modifier.size(56.dp)) }
+            }
+            Box(
+                Modifier.align(Alignment.BottomEnd).size(36.dp).clip(CircleShape).background(Palette.Indigo500),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Filled.Edit, "Change photo", tint = Color.White, modifier = Modifier.size(18.dp)) }
+        }
+        Spacer(Modifier.height(32.dp))
+        SpawnTextField(name, { name = it; vm.clearError() }, "What should your friends call you?", label = "Name")
     }
 }
 
 @Composable
 fun TermsScreen(vm: AuthViewModel) {
-    val context = LocalContext.current
     var agreed by rememberSaveable { mutableStateOf(false) }
     AuthScaffold(null, "One Last Thing", "Spawn is for real plans with real friends. Keep it kind.", vm.error, bottom = {
         PrimaryButton("Let’s Spawn", { vm.acceptTerms() }, enabled = agreed, loading = vm.loading)
@@ -417,15 +478,19 @@ fun TermsScreen(vm: AuthViewModel) {
         Spacer(Modifier.height(20.dp))
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { agreed = !agreed }) {
             Checkbox(agreed, { agreed = it }, colors = CheckboxDefaults.colors(checkedColor = Palette.Indigo500))
+            // Tapping the sentence ticks the box; only "Privacy Policy" opens the browser. iOS's short copy keeps it on one
+            // line, since a wrapped link's padded tap area would cover the words above it.
             Text(
                 buildAnnotatedString {
-                    append("I agree to the Terms of Service and ")
-                    withStyle(SpanStyle(color = Palette.Indigo500, textDecoration = TextDecoration.Underline)) { append("Privacy Policy") }
+                    append("I agree to the Terms & ")
+                    withLink(
+                        LinkAnnotation.Url(
+                            BuildConfig.PRIVACY_POLICY_URL,
+                            TextLinkStyles(SpanStyle(color = Palette.Indigo500, textDecoration = TextDecoration.Underline)),
+                        )
+                    ) { append("Privacy\u00A0Policy") }
                 },
                 style = onest(14.sp), color = SpawnTheme.colors.text,
-                modifier = Modifier.clickable {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.PRIVACY_POLICY_URL)))
-                },
             )
         }
     }

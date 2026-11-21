@@ -81,7 +81,8 @@ data class UpdateUserDetailsDTO(
 )
 
 @Serializable
-data class OptionalDetailsDTO(val name: String)
+/** Name and/or photo (base64 JPEG). Leave a field null to keep what the account already has (e.g. the Google name and photo). */
+data class OptionalDetailsDTO(val name: String? = null, val profilePictureData: String? = null)
 
 @Serializable
 data class UserUpdateDTO(

@@ -184,6 +184,7 @@ fun SpawnTextField(
     error: String? = null,
     singleLine: Boolean = true,
     minLines: Int = 1,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
 ) {
     val c = SpawnTheme.colors
     Column(modifier) {
@@ -198,7 +199,7 @@ fun SpawnTextField(
             singleLine = singleLine,
             minLines = minLines,
             textStyle = onest(16.sp).copy(color = c.text),
-            visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+            visualTransformation = if (isPassword) PasswordVisualTransformation() else visualTransformation,
             keyboardOptions = KeyboardOptions(keyboardType = if (isPassword) KeyboardType.Password else keyboardType),
             isError = error != null,
             shape = RoundedCornerShape(16.dp),
