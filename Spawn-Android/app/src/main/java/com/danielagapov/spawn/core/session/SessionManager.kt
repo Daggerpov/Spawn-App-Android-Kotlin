@@ -110,6 +110,16 @@ object Spawn {
 
     fun consumeLink() { _pendingLink.value = null }
 
+    private var returnToGetIn = false
+
+    /** Back out of account setup: sign out here (the account stays and resumes at this step next sign-in). */
+    fun cancelOnboarding() {
+        returnToGetIn = true
+        signOutLocally()
+    }
+
+    fun consumeReturnToGetIn(): Boolean = returnToGetIn.also { returnToGetIn = false }
+
     fun signOutLocally() {
         tokens.clear()
         isOAuthUser = false

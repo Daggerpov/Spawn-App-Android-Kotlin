@@ -1,8 +1,6 @@
 package com.danielagapov.spawn.ui.profile
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,6 +12,7 @@ import com.danielagapov.spawn.core.network.ApiException
 import com.danielagapov.spawn.core.network.bodyOrThrow
 import com.danielagapov.spawn.core.network.friendlyMessage
 import com.danielagapov.spawn.core.session.Spawn
+import com.danielagapov.spawn.core.util.compressPhoto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -21,7 +20,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.ByteArrayOutputStream
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -140,7 +138,7 @@ class MyProfileViewModel : ViewModel() {
                     socials = Spawn.api.updateSocialMedia(me, UpdateUserSocialMediaDTO(whatsappNumber = wa.ifEmpty { null }, instagramUsername = ig.ifEmpty { null })).bodyOrThrow()
                 }
                 if (photo != null) {
-                    val bytes = withContext(Dispatchers.IO) { compress(context, photo) }
+                    val bytes = withContext(Dispatchers.IO) { compressPhoto(context, photo) }
                     updated = Spawn.api.updateProfilePicture(me, bytes.toRequestBody("image/jpeg".toMediaType())).bodyOrThrow()
                 }
                 Spawn.updateUser(updated.copy(relationshipStatus = null))
@@ -154,13 +152,6 @@ class MyProfileViewModel : ViewModel() {
         }
     }
 
-    /** Square-ish 1024px JPEG, like iOS's resized upload. */
-    private fun compress(context: Context, uri: Uri): ByteArray {
-        val src = context.contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it) } ?: error("Couldn't read that photo")
-        val scale = 1024f / maxOf(src.width, src.height)
-        val bmp = if (scale < 1f) Bitmap.createScaledBitmap(src, (src.width * scale).toInt(), (src.height * scale).toInt(), true) else src
-        return ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.JPEG, 85, it) }.toByteArray()
-    }
     // endregion
 
     // region Settings

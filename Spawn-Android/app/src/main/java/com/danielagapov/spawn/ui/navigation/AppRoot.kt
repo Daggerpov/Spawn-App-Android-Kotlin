@@ -47,7 +47,8 @@ fun AppRoot() {
         when (val s = auth) {
             AuthState.Loading -> Unit // system splash stays up
             AuthState.SignedOut -> AuthFlow()
-            is AuthState.Onboarding -> OnboardingFlow(s.status, needsPassword = s.user.provider == null || s.user.provider == "email")
+            // Google sign-up responses leave user.provider empty, so go by how they signed in, not the provider field.
+            is AuthState.Onboarding -> OnboardingFlow(s.status, isOAuthUser = Spawn.isOAuthUser)
             is AuthState.SignedIn -> MainScaffold(s.user)
         }
     }
@@ -57,7 +58,9 @@ fun AppRoot() {
 private fun AuthFlow() {
     val nav = rememberNavController()
     val vm: AuthViewModel = viewModel()
-    NavHost(nav, startDestination = "welcome") {
+    // Backing out of account setup lands on "Let's Get You In", not the welcome and intro pages again.
+    val start = remember { if (Spawn.consumeReturnToGetIn()) "getin" else "welcome" }
+    NavHost(nav, startDestination = start) {
         composable("welcome") { WelcomeScreen(onGetStarted = { nav.navigate("intro") }) }
         composable("intro") { IntroScreen(onBack = { nav.popBackStack() }, onDone = { nav.navigate("getin") }) }
         composable("getin") { GetInScreen(onCreateAccount = { vm.clearError(); nav.navigate("signup") }, onLogin = { vm.clearError(); nav.navigate("login") }) }
@@ -69,7 +72,7 @@ private fun AuthFlow() {
 
 /** Resumes onboarding at the step the backend says the account is on. */
 @Composable
-private fun OnboardingFlow(status: UserStatus?, needsPassword: Boolean) {
+private fun OnboardingFlow(status: UserStatus?, isOAuthUser: Boolean) {
     val nav = rememberNavController()
     val vm: AuthViewModel = viewModel()
     val start = when (status) {
@@ -79,8 +82,9 @@ private fun OnboardingFlow(status: UserStatus?, needsPassword: Boolean) {
         UserStatus.ACTIVE -> "terms"
     }
     NavHost(nav, startDestination = start) {
-        composable("details") { AccountDetailsScreen(vm, needsPassword) { nav.navigate("name") } }
-        composable("name") { NameScreen(vm) { nav.navigate("terms") } }
+        // The server can't undo a finished step, so only the first one has a way back (to sign in again later).
+        composable("details") { AccountDetailsScreen(vm, isOAuthUser, onBack = { Spawn.cancelOnboarding() }) { nav.navigate("name") { popUpTo("details") { inclusive = true } } } }
+        composable("name") { ProfileSetupScreen(vm) { nav.navigate("terms") { popUpTo("name") { inclusive = true } } } }
         composable("terms") { TermsScreen(vm) }
     }
 }
