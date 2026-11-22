@@ -4,7 +4,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -49,7 +51,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -319,10 +320,13 @@ private fun LazyRowEmojis(emojis: List<String>, selected: String, onPick: (Strin
 // region Step 2: time
 @Composable
 private fun TimeStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
-    var customOpen by remember { mutableStateOf(false) }
+    val scroll = rememberScrollState()
+    val isCustom = vm.duration == Duration.Custom
+    // Bring the custom length wheel into view when it opens below the chips.
+    LaunchedEffect(isCustom) { if (isCustom) { delay(60); scroll.animateScrollTo(scroll.maxValue) } }
     Column(Modifier.fillMaxSize().padding(bottom = tabBarOrKeyboard(bottomPadding))) {
         StepHeader("What time?", "Set a time for your “${vm.selectedType?.title ?: "new"}” Activity", onBack = { vm.step = CreateStep.Type })
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
+        Column(Modifier.weight(1f).verticalScroll(scroll).padding(horizontal = 20.dp)) {
             Spacer(Modifier.height(16.dp))
             Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                 Box(Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(10.dp)).background(SpawnTheme.colors.surfaceMuted))
@@ -345,49 +349,39 @@ private fun TimeStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
                 Duration.entries.filter { it != Duration.Custom }.forEach { d -> Chip(d.label, vm.duration == d, Modifier.weight(1f)) { vm.duration = d } }
             }
             Spacer(Modifier.height(8.dp))
-            val isCustom = vm.duration == Duration.Custom
-            Chip(if (isCustom) "Custom: ${formatMinutes(vm.customMinutes)}" else "Custom", isCustom, Modifier.fillMaxWidth()) { customOpen = true }
+            // Like Figma's participant "Custom" chip on the confirm step: same chip, reads "Custom: 3 hrs" once set.
+            Chip(if (isCustom) "Custom: ${formatMinutes(vm.customMinutes)}" else "Custom", isCustom) { vm.duration = Duration.Custom }
+            if (isCustom) {
+                Spacer(Modifier.height(4.dp))
+                CustomDurationWheel(vm.customMinutes) { vm.customMinutes = it }
+                if (!vm.durationIsValid()) {
+                    Text("Pick a length longer than 0 min.", style = onest(13.sp), color = Palette.Red600)
+                }
+            }
         }
         Column(Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
-            PrimaryButton("Next Step (Location)", { vm.step = CreateStep.Location }, enabled = vm.timeIsValid())
+            PrimaryButton("Next Step (Location)", { vm.step = CreateStep.Location }, enabled = vm.timeIsValid() && vm.durationIsValid())
             Spacer(Modifier.height(12.dp))
             StepIndicator(0)
         }
     }
-    if (customOpen) {
-        CustomDurationDialog(vm.customMinutes, onDismiss = { customOpen = false }) { minutes ->
-            vm.customMinutes = minutes
-            vm.duration = Duration.Custom
-            customOpen = false
-        }
-    }
 }
 
-/** Hours (0–23) and minutes (quarter hours) for an activity length other than the presets. */
+/** Hours (0–23) and quarter hours, styled like the start-time wheel above it. */
 @Composable
-private fun CustomDurationDialog(initialMinutes: Int, onDismiss: () -> Unit, onSet: (Int) -> Unit) {
-    var hours by remember { mutableStateOf((initialMinutes / 60).coerceIn(0, 23)) }
-    var quarter by remember { mutableStateOf((initialMinutes % 60) / 15) }
-    val total = hours * 60 + quarter * 15
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = SpawnTheme.colors.background,
-        title = { Text("How long?", style = onest(20.sp, FontWeight.SemiBold), color = SpawnTheme.colors.heading) },
-        text = {
-            Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                Box(Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(10.dp)).background(SpawnTheme.colors.surfaceMuted))
-                Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    WheelPicker((0..23).map { "$it" }, hours, { hours = it }, Modifier.width(56.dp))
-                    Text("hr", style = onest(16.sp), color = SpawnTheme.colors.textSecondary)
-                    Spacer(Modifier.width(12.dp))
-                    WheelPicker(listOf("00", "15", "30", "45"), quarter, { quarter = it }, Modifier.width(56.dp))
-                    Text("min", style = onest(16.sp), color = SpawnTheme.colors.textSecondary)
-                }
-            }
-        },
-        confirmButton = { TextButton({ onSet(total) }, enabled = total > 0) { Text("Set", color = if (total > 0) Palette.Indigo500 else SpawnTheme.colors.textSecondary) } },
-        dismissButton = { TextButton(onDismiss) { Text("Cancel", color = SpawnTheme.colors.textSecondary) } },
-    )
+private fun CustomDurationWheel(minutes: Int, onChange: (Int) -> Unit) {
+    val hours = (minutes / 60).coerceIn(0, 23)
+    val quarter = (minutes % 60) / 15
+    Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(10.dp)).background(SpawnTheme.colors.surfaceMuted))
+        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            WheelPicker((0..23).map { "$it" }, hours, { onChange(it * 60 + quarter * 15) }, Modifier.width(56.dp))
+            Text("hr", style = onest(17.sp), color = SpawnTheme.colors.text)
+            Spacer(Modifier.width(16.dp))
+            WheelPicker(listOf("00", "15", "30", "45"), quarter, { onChange(hours * 60 + it * 15) }, Modifier.width(56.dp))
+            Text("min", style = onest(17.sp), color = SpawnTheme.colors.text)
+        }
+    }
 }
 
 @Composable
@@ -464,20 +458,24 @@ private fun LocationStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
     }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        // The list panel drags down to show the map (keeping the header and search field in view) and back up.
+        // Like iOS and Figma: the list panel follows a downward drag, and a long or fast pull opens
+        // "Set Location" on the map (drag map to move pin). A short pull springs back.
         val density = LocalDensity.current
         val panelHeight = maxHeight * 0.72f
-        // Lowered, it keeps the handle, header, search field and step dots above the tab bar.
-        val maxOffset = with(density) { (panelHeight - 196.dp - bottomPadding).coerceAtLeast(0.dp).toPx() }
+        val switchAt = with(density) { 100.dp.toPx() }
         var panelOffset by remember { mutableFloatStateOf(0f) }
         suspend fun settle(velocity: Float) {
-            val down = velocity > 600f || (velocity > -600f && panelOffset > maxOffset / 2)
-            animate(panelOffset, if (down) maxOffset else 0f, velocity) { v, _ -> panelOffset = v }
+            if (panelOffset > switchAt || velocity > 1500f) {
+                pinMode = true
+                panelOffset = 0f
+            } else {
+                animate(panelOffset, 0f, velocity, spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow)) { v, _ -> panelOffset = v }
+            }
         }
-        val dragState = rememberDraggableState { d -> panelOffset = (panelOffset + d).coerceIn(0f, maxOffset) }
-        val listScroll = remember(maxOffset) {
+        val dragState = rememberDraggableState { d -> panelOffset = (panelOffset + d).coerceAtLeast(0f) }
+        val listScroll = remember {
             object : NestedScrollConnection {
-                // Scrolling the list up first raises a lowered panel; pulling down at the top of the list lowers it.
+                // Pulling down at the top of the list drags the panel; scrolling back up first undoes that.
                 override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                     if (available.y >= 0f || panelOffset <= 0f) return Offset.Zero
                     val next = (panelOffset + available.y).coerceAtLeast(0f)
@@ -487,13 +485,11 @@ private fun LocationStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
                 }
                 override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
                     if (available.y <= 0f || source != NestedScrollSource.UserInput) return Offset.Zero
-                    val next = (panelOffset + available.y).coerceAtMost(maxOffset)
-                    val used = next - panelOffset
-                    panelOffset = next
-                    return Offset(0f, used)
+                    panelOffset += available.y
+                    return Offset(0f, available.y)
                 }
                 override suspend fun onPreFling(available: Velocity): Velocity {
-                    if (panelOffset <= 0f || panelOffset >= maxOffset) return Velocity.Zero
+                    if (panelOffset <= 0f) return Velocity.Zero
                     settle(available.y)
                     return available
                 }
@@ -526,7 +522,8 @@ private fun LocationStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
             }
         } else {
             Column(
-                Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(panelHeight - with(density) { panelOffset.toDp() })
+                Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(panelHeight)
+                    .graphicsLayer { translationY = panelOffset }
                     .shadow(16.dp, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                     .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)).background(SpawnTheme.colors.background)
                     .padding(bottom = tabBarOrKeyboard(bottomPadding)),
@@ -537,12 +534,7 @@ private fun LocationStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
                         onDragStopped = { v -> settle(v) },
                     ),
                 ) {
-                    Box(
-                        Modifier.fillMaxWidth().clickable(interactionSource = null, indication = null) {
-                            scope.launch { settle(if (panelOffset > 0f) -1000f else 1000f) }
-                        }.padding(top = 8.dp, bottom = 4.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
+                    Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
                         Box(Modifier.size(40.dp, 5.dp).clip(CircleShape).background(SpawnTheme.colors.divider))
                     }
                     Box(Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 8.dp)) {
@@ -550,10 +542,7 @@ private fun LocationStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
                         Text("Choose Location", style = onest(18.sp, FontWeight.SemiBold), color = SpawnTheme.colors.heading, modifier = Modifier.align(Alignment.Center))
                     }
                 }
-                SpawnTextField(
-                    query, { query = it }, "Where at?",
-                    Modifier.padding(horizontal = 16.dp).onFocusChanged { if (it.hasFocus && panelOffset > 0f) scope.launch { settle(-1000f) } },
-                )
+                SpawnTextField(query, { query = it }, "Where at?", Modifier.padding(horizontal = 16.dp))
                 LazyColumn(Modifier.weight(1f).nestedScroll(listScroll).padding(horizontal = 16.dp)) {
                     item {
                         PlaceRow(Icons.Outlined.NearMe, "Current Location", if (me != null) "Use where you are now" else "Location is off", null) {
