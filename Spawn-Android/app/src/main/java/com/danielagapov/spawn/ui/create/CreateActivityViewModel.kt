@@ -20,7 +20,21 @@ import java.util.UUID
 enum class CreateStep { Type, Time, Location, Confirm, Success }
 
 enum class Duration(val label: String, val minutes: Long?) {
-    Indefinite("Indefinite", null), TwoHours("2 hours", 120), OneHour("1 hour", 60), ThirtyMinutes("30 mins", 30)
+    Indefinite("Indefinite", null), TwoHours("2 hours", 120), OneHour("1 hour", 60), ThirtyMinutes("30 mins", 30),
+    /** Any length the user picks; the minutes live in [CreateActivityViewModel.customMinutes]. */
+    Custom("Custom", null),
+}
+
+/** "45 min", "3 hrs", "1 hr 30 min". */
+fun formatMinutes(total: Int): String {
+    val h = total / 60
+    val m = total % 60
+    val hours = if (h == 1) "1 hr" else "$h hrs"
+    return when {
+        h == 0 -> "$m min"
+        m == 0 -> hours
+        else -> "$hours $m min"
+    }
 }
 
 /** Activity creation + activity type management (iOS ActivityCreationViewModel + ActivityTypeViewModel). */
@@ -40,6 +54,11 @@ class CreateActivityViewModel : ViewModel() {
     var pm by mutableStateOf(true)
     var title by mutableStateOf("")
     var duration by mutableStateOf(Duration.Indefinite)
+    var customMinutes by mutableStateOf(180)
+
+    /** Length in minutes, or null for an activity with no end time. */
+    val durationMinutes: Long?
+        get() = if (duration == Duration.Custom) customMinutes.toLong() else duration.minutes
 
     // Location step
     var location by mutableStateOf<LocationDTO?>(null)
@@ -130,7 +149,7 @@ class CreateActivityViewModel : ViewModel() {
             try {
                 val zone = ZoneId.systemDefault()
                 val start = startLocal.atZone(zone).toInstant()
-                val end = duration.minutes?.let { start.plusSeconds(it * 60) }
+                val end = durationMinutes?.let { start.plusSeconds(it * 60) }
                 val body = ActivityDTO(
                     id = UUID.randomUUID().toString(),
                     title = effectiveTitle,
