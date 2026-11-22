@@ -2,7 +2,6 @@ package com.danielagapov.spawn.core.network
 
 import com.danielagapov.spawn.core.model.*
 import okhttp3.RequestBody
-import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -69,13 +68,13 @@ interface SpawnApi {
     suspend fun interests(@Path("id") id: String): Response<List<String>>
 
     @POST("users/{id}/interests")
-    suspend fun addInterest(@Path("id") id: String, @Body interest: RequestBody): Response<ResponseBody>
+    suspend fun addInterest(@Path("id") id: String, @Body interest: RequestBody): Response<Unit>
 
     @PUT("users/{id}/interests")
-    suspend fun setInterests(@Path("id") id: String, @Body interests: List<String>): Response<ResponseBody>
+    suspend fun setInterests(@Path("id") id: String, @Body interests: List<String>): Response<Unit>
 
     @DELETE("users/{id}/interests/{interest}")
-    suspend fun removeInterest(@Path("id") id: String, @Path("interest") interest: String): Response<ResponseBody>
+    suspend fun removeInterest(@Path("id") id: String, @Path("interest") interest: String): Response<Unit>
 
     @GET("users/{id}/social-media")
     suspend fun socialMedia(@Path("id") id: String): Response<UserSocialMediaDTO>
@@ -116,7 +115,7 @@ interface SpawnApi {
     suspend fun recommendedFriends(@Path("id") id: String): Response<List<RecommendedFriendUserDTO>>
 
     @DELETE("users/friends/{userId}/{friendId}")
-    suspend fun removeFriend(@Path("userId") userId: String, @Path("friendId") friendId: String): Response<ResponseBody>
+    suspend fun removeFriend(@Path("userId") userId: String, @Path("friendId") friendId: String): Response<Unit>
 
     @GET("friend-requests/incoming/{id}")
     suspend fun incomingFriendRequests(@Path("id") id: String): Response<List<FetchFriendRequestDTO>>
@@ -129,7 +128,7 @@ interface SpawnApi {
 
     /** action: accept | reject | cancel */
     @PUT("friend-requests/{id}")
-    suspend fun friendRequestAction(@Path("id") id: String, @Query("friendRequestAction") action: String): Response<ResponseBody>
+    suspend fun friendRequestAction(@Path("id") id: String, @Query("friendRequestAction") action: String): Response<Unit>
     // endregion
 
     // region Activities
@@ -156,7 +155,7 @@ interface SpawnApi {
     suspend fun updateActivity(@Path("id") id: String, @Body body: ActivityPartialUpdateDTO): Response<FullFeedActivityDTO>
 
     @DELETE("activities/{id}")
-    suspend fun deleteActivity(@Path("id") id: String): Response<ResponseBody>
+    suspend fun deleteActivity(@Path("id") id: String): Response<Unit>
 
     @PUT("activities/{activityId}/toggle-status/{userId}")
     suspend fun toggleParticipation(@Path("activityId") activityId: String, @Path("userId") userId: String): Response<FullFeedActivityDTO>
@@ -176,35 +175,35 @@ interface SpawnApi {
     suspend fun sendChat(@Body body: CreateChatMessageDTO): Response<FullActivityChatMessageDTO>
 
     @DELETE("chat-messages/{id}")
-    suspend fun deleteChat(@Path("id") id: String): Response<ResponseBody>
+    suspend fun deleteChat(@Path("id") id: String): Response<Unit>
 
     @POST("chat-messages/{id}/likes/{userId}")
     suspend fun likeChat(@Path("id") id: String, @Path("userId") userId: String): Response<ChatMessageLikesDTO>
 
     @DELETE("chat-messages/{id}/likes/{userId}")
-    suspend fun unlikeChat(@Path("id") id: String, @Path("userId") userId: String): Response<ResponseBody>
+    suspend fun unlikeChat(@Path("id") id: String, @Path("userId") userId: String): Response<Unit>
     // endregion
 
     // region Safety
     @POST("blocked-users")
-    suspend fun blockUser(@Body body: BlockedUserCreationDTO): Response<ResponseBody>
+    suspend fun blockUser(@Body body: BlockedUserCreationDTO): Response<Unit>
 
     @DELETE("blocked-users/{blockerId}/{blockedId}")
-    suspend fun unblockUser(@Path("blockerId") blockerId: String, @Path("blockedId") blockedId: String): Response<ResponseBody>
+    suspend fun unblockUser(@Path("blockerId") blockerId: String, @Path("blockedId") blockedId: String): Response<Unit>
 
     @GET("blocked-users/{blockerId}")
     suspend fun blockedUsers(@Path("blockerId") blockerId: String, @Query("returnOnlyIds") onlyIds: Boolean = false): Response<List<BlockedUserDTO>>
 
     @POST("reports")
-    suspend fun report(@Body body: CreateReportedContentDTO): Response<ResponseBody>
+    suspend fun report(@Body body: CreateReportedContentDTO): Response<Unit>
 
     @POST("feedback")
-    suspend fun feedback(@Body body: FeedbackSubmissionDTO): Response<ResponseBody>
+    suspend fun feedback(@Body body: FeedbackSubmissionDTO): Response<Unit>
     // endregion
 
     // region Notifications
     @POST("notifications/device-tokens")
-    suspend fun registerDeviceToken(@Body body: DeviceTokenDTO): Response<ResponseBody>
+    suspend fun registerDeviceToken(@Body body: DeviceTokenDTO): Response<Unit>
     // endregion
 
     // region Share links (getspawn.com/activity/{code}, /profile/{code})
