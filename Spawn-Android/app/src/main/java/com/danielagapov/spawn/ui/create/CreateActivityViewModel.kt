@@ -138,6 +138,8 @@ class CreateActivityViewModel : ViewModel() {
 
     val effectiveTitle: String get() = title.trim().ifEmpty { selectedType?.title ?: "Hangout" }
 
+    fun durationIsValid(): Boolean = duration != Duration.Custom || customMinutes > 0
+
     fun timeIsValid(): Boolean = startLocal.isAfter(LocalDateTime.now().minusMinutes(5))
 
     fun submit() {
