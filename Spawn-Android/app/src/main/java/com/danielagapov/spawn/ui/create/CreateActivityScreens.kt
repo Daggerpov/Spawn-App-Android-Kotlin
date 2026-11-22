@@ -1,6 +1,22 @@
 package com.danielagapov.spawn.ui.create
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -33,6 +49,19 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -70,16 +99,43 @@ import java.util.Locale
 fun CreateActivityFlow(vm: CreateActivityViewModel, onDone: () -> Unit, bottomPadding: Dp) {
     LaunchedEffect(Unit) { if (vm.types.isEmpty()) vm.load() }
     BackHandler(enabled = vm.step != CreateStep.Type && vm.step != CreateStep.Success) { vm.step = CreateStep.entries[vm.step.ordinal - 1] }
-    Box(Modifier.fillMaxSize().background(SpawnTheme.colors.background)) {
-        when (vm.step) {
-            CreateStep.Type -> TypeStep(vm, bottomPadding)
-            CreateStep.Time -> TimeStep(vm, bottomPadding)
-            CreateStep.Location -> LocationStep(vm, bottomPadding)
-            CreateStep.Confirm -> ConfirmStep(vm, bottomPadding)
-            CreateStep.Success -> SuccessStep(vm, bottomPadding, onDone = { vm.reset(); onDone() })
+    var size by remember { mutableStateOf(IntSize.Zero) }
+    // Where the tapped type card sits, so the time step grows out of it (like opening an app on iOS).
+    var zoomFrom by remember { mutableStateOf(TransformOrigin.Center) }
+    Box(Modifier.fillMaxSize().background(SpawnTheme.colors.background).onSizeChanged { size = it }) {
+        AnimatedContent(
+            targetState = vm.step,
+            transitionSpec = {
+                val forward = targetState.ordinal > initialState.ordinal
+                val fromCard = initialState == CreateStep.Type && targetState == CreateStep.Time
+                val spec = tween<Float>(if (fromCard) 380 else 300, easing = FastOutSlowInEasing)
+                if (forward) {
+                    (scaleIn(spec, initialScale = if (fromCard) 0.3f else 0.92f, transformOrigin = if (fromCard) zoomFrom else TransformOrigin.Center) + fadeIn(tween(220))) togetherWith
+                        (scaleOut(spec, targetScale = 1.05f) + fadeOut(tween(180)))
+                } else {
+                    (scaleIn(spec, initialScale = 1.05f) + fadeIn(tween(220))) togetherWith
+                        (scaleOut(spec, targetScale = if (fromCard || targetState == CreateStep.Type) 0.3f else 0.92f, transformOrigin = if (targetState == CreateStep.Type) zoomFrom else TransformOrigin.Center) + fadeOut(tween(220)))
+                }
+            },
+            label = "createStep",
+        ) { step ->
+            when (step) {
+                CreateStep.Type -> TypeStep(vm, bottomPadding, onCardTapped = { center ->
+                    if (size.width > 0 && size.height > 0) zoomFrom = TransformOrigin(center.x / size.width, center.y / size.height)
+                })
+                CreateStep.Time -> TimeStep(vm, bottomPadding)
+                CreateStep.Location -> LocationStep(vm, bottomPadding)
+                CreateStep.Confirm -> ConfirmStep(vm, bottomPadding)
+                CreateStep.Success -> SuccessStep(vm, bottomPadding, onDone = { vm.reset(); onDone() })
+            }
         }
     }
 }
+
+/** The tab bar and the keyboard overlap, so a step pads for whichever is taller, never both. */
+@Composable
+private fun tabBarOrKeyboard(bottomPadding: Dp): Dp =
+    maxOf(bottomPadding, WindowInsets.ime.asPaddingValues().calculateBottomPadding())
 
 @Composable
 private fun StepIndicator(current: Int, total: Int = 3) {
@@ -110,7 +166,7 @@ private fun StepHeader(title: String, subtitle: String? = null, onBack: (() -> U
 // region Step 1: type grid
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun TypeStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
+private fun TypeStep(vm: CreateActivityViewModel, bottomPadding: Dp, onCardTapped: (Offset) -> Unit) {
     var menuFor by remember { mutableStateOf<ActivityTypeDTO?>(null) }
     var editing by remember { mutableStateOf<ActivityTypeDTO?>(null) }
     var creating by remember { mutableStateOf(false) }
@@ -127,7 +183,11 @@ private fun TypeStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
             modifier = Modifier.weight(1f, fill = false),
         ) {
             items(vm.types, key = { it.id }) { t ->
-                Box {
+                val press = remember { MutableInteractionSource() }
+                val pressed by press.collectIsPressedAsState()
+                val scale by animateFloatAsState(if (pressed) 0.94f else 1f, tween(120), label = "typePress")
+                var center by remember { mutableStateOf(Offset.Zero) }
+                Box(Modifier.graphicsLayer { scaleX = scale; scaleY = scale }.onGloballyPositioned { center = it.boundsInRoot().center }) {
                     Column(
                         Modifier
                             .aspectRatio(0.95f)
@@ -135,7 +195,7 @@ private fun TypeStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
                             .clip(RoundedCornerShape(14.dp))
                             .background(SpawnTheme.colors.typeButton)
                             .alpha(if (menuFor != null && menuFor?.id != t.id) 0.4f else 1f)
-                            .combinedClickable(onClick = { vm.pickType(t) }, onLongClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); menuFor = t }),
+                            .combinedClickable(press, LocalIndication.current, onClick = { onCardTapped(center); vm.pickType(t) }, onLongClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); menuFor = t }),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
@@ -203,8 +263,10 @@ private fun TypeEditor(existing: ActivityTypeDTO?, vm: CreateActivityViewModel, 
     var icon by remember { mutableStateOf(existing?.icon ?: "⭐️") }
     var people by remember { mutableStateOf(existing?.associatedFriends?.map { it.id }?.toSet() ?: vm.friends.map { it.id }.toSet()) }
     val emojis = listOf("⭐️", "🍽️", "☕️", "🏀", "🎮", "📚", "🎬", "🍻", "🏃", "🧗", "🎤", "🛍️", "🏖️", "🎲", "🍕", "🚗")
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = SpawnTheme.colors.background) {
-        Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp).verticalScroll(rememberScrollState())) {
+    // Fully expanded: a half-open sheet hides its lower part (the name field) behind the keyboard.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = SpawnTheme.colors.background) {
+        Column(Modifier.imePadding().padding(horizontal = 20.dp).padding(bottom = 24.dp).verticalScroll(rememberScrollState())) {
             Text(if (existing == null) "Create Activity Type" else "Manage Type", style = onest(20.sp, FontWeight.SemiBold), color = SpawnTheme.colors.heading, modifier = Modifier.align(Alignment.CenterHorizontally))
             Spacer(Modifier.height(16.dp))
             Box(Modifier.align(Alignment.CenterHorizontally).size(84.dp).clip(RoundedCornerShape(18.dp)).background(SpawnTheme.colors.typeButton), contentAlignment = Alignment.Center) {
@@ -257,7 +319,8 @@ private fun LazyRowEmojis(emojis: List<String>, selected: String, onPick: (Strin
 // region Step 2: time
 @Composable
 private fun TimeStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
-    Column(Modifier.fillMaxSize().padding(bottom = bottomPadding).imePadding()) {
+    var customOpen by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize().padding(bottom = tabBarOrKeyboard(bottomPadding))) {
         StepHeader("What time?", "Set a time for your “${vm.selectedType?.title ?: "new"}” Activity", onBack = { vm.step = CreateStep.Type })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
             Spacer(Modifier.height(16.dp))
@@ -279,8 +342,11 @@ private fun TimeStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
             Text("Activity Duration", style = onest(14.sp, FontWeight.Medium), color = SpawnTheme.colors.text)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Duration.entries.forEach { d -> Chip(d.label, vm.duration == d, Modifier.weight(1f)) { vm.duration = d } }
+                Duration.entries.filter { it != Duration.Custom }.forEach { d -> Chip(d.label, vm.duration == d, Modifier.weight(1f)) { vm.duration = d } }
             }
+            Spacer(Modifier.height(8.dp))
+            val isCustom = vm.duration == Duration.Custom
+            Chip(if (isCustom) "Custom: ${formatMinutes(vm.customMinutes)}" else "Custom", isCustom, Modifier.fillMaxWidth()) { customOpen = true }
         }
         Column(Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
             PrimaryButton("Next Step (Location)", { vm.step = CreateStep.Location }, enabled = vm.timeIsValid())
@@ -288,6 +354,40 @@ private fun TimeStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
             StepIndicator(0)
         }
     }
+    if (customOpen) {
+        CustomDurationDialog(vm.customMinutes, onDismiss = { customOpen = false }) { minutes ->
+            vm.customMinutes = minutes
+            vm.duration = Duration.Custom
+            customOpen = false
+        }
+    }
+}
+
+/** Hours (0–23) and minutes (quarter hours) for an activity length other than the presets. */
+@Composable
+private fun CustomDurationDialog(initialMinutes: Int, onDismiss: () -> Unit, onSet: (Int) -> Unit) {
+    var hours by remember { mutableStateOf((initialMinutes / 60).coerceIn(0, 23)) }
+    var quarter by remember { mutableStateOf((initialMinutes % 60) / 15) }
+    val total = hours * 60 + quarter * 15
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = SpawnTheme.colors.background,
+        title = { Text("How long?", style = onest(20.sp, FontWeight.SemiBold), color = SpawnTheme.colors.heading) },
+        text = {
+            Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(10.dp)).background(SpawnTheme.colors.surfaceMuted))
+                Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    WheelPicker((0..23).map { "$it" }, hours, { hours = it }, Modifier.width(56.dp))
+                    Text("hr", style = onest(16.sp), color = SpawnTheme.colors.textSecondary)
+                    Spacer(Modifier.width(12.dp))
+                    WheelPicker(listOf("00", "15", "30", "45"), quarter, { quarter = it }, Modifier.width(56.dp))
+                    Text("min", style = onest(16.sp), color = SpawnTheme.colors.textSecondary)
+                }
+            }
+        },
+        confirmButton = { TextButton({ onSet(total) }, enabled = total > 0) { Text("Set", color = if (total > 0) Palette.Indigo500 else SpawnTheme.colors.textSecondary) } },
+        dismissButton = { TextButton(onDismiss) { Text("Cancel", color = SpawnTheme.colors.textSecondary) } },
+    )
 }
 
 @Composable
@@ -363,7 +463,42 @@ private fun LocationStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
         } else PlaceSearch.search(context, query, me)
     }
 
-    Box(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        // The list panel drags down to show the map (keeping the header and search field in view) and back up.
+        val density = LocalDensity.current
+        val panelHeight = maxHeight * 0.72f
+        // Lowered, it keeps the handle, header, search field and step dots above the tab bar.
+        val maxOffset = with(density) { (panelHeight - 196.dp - bottomPadding).coerceAtLeast(0.dp).toPx() }
+        var panelOffset by remember { mutableFloatStateOf(0f) }
+        suspend fun settle(velocity: Float) {
+            val down = velocity > 600f || (velocity > -600f && panelOffset > maxOffset / 2)
+            animate(panelOffset, if (down) maxOffset else 0f, velocity) { v, _ -> panelOffset = v }
+        }
+        val dragState = rememberDraggableState { d -> panelOffset = (panelOffset + d).coerceIn(0f, maxOffset) }
+        val listScroll = remember(maxOffset) {
+            object : NestedScrollConnection {
+                // Scrolling the list up first raises a lowered panel; pulling down at the top of the list lowers it.
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    if (available.y >= 0f || panelOffset <= 0f) return Offset.Zero
+                    val next = (panelOffset + available.y).coerceAtLeast(0f)
+                    val used = next - panelOffset
+                    panelOffset = next
+                    return Offset(0f, used)
+                }
+                override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                    if (available.y <= 0f || source != NestedScrollSource.UserInput) return Offset.Zero
+                    val next = (panelOffset + available.y).coerceAtMost(maxOffset)
+                    val used = next - panelOffset
+                    panelOffset = next
+                    return Offset(0f, used)
+                }
+                override suspend fun onPreFling(available: Velocity): Velocity {
+                    if (panelOffset <= 0f || panelOffset >= maxOffset) return Velocity.Zero
+                    settle(available.y)
+                    return available
+                }
+            }
+        }
         MapboxMap(Modifier.fillMaxSize(), mapViewportState = viewport, scaleBar = {}, compass = {})
         if (pinMode) {
             Icon(Icons.Filled.Place, null, tint = Palette.Indigo600, modifier = Modifier.align(Alignment.Center).offset(y = (-20).dp).size(44.dp))
@@ -391,20 +526,35 @@ private fun LocationStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
             }
         } else {
             Column(
-                Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.72f)
+                Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(panelHeight - with(density) { panelOffset.toDp() })
                     .shadow(16.dp, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                     .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)).background(SpawnTheme.colors.background)
-                    .imePadding().padding(bottom = bottomPadding),
+                    .padding(bottom = tabBarOrKeyboard(bottomPadding)),
             ) {
-                Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
-                    Box(Modifier.size(40.dp, 5.dp).clip(CircleShape).background(SpawnTheme.colors.divider))
+                Column(
+                    Modifier.fillMaxWidth().draggable(
+                        dragState, Orientation.Vertical,
+                        onDragStopped = { v -> settle(v) },
+                    ),
+                ) {
+                    Box(
+                        Modifier.fillMaxWidth().clickable(interactionSource = null, indication = null) {
+                            scope.launch { settle(if (panelOffset > 0f) -1000f else 1000f) }
+                        }.padding(top = 8.dp, bottom = 4.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box(Modifier.size(40.dp, 5.dp).clip(CircleShape).background(SpawnTheme.colors.divider))
+                    }
+                    Box(Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 8.dp)) {
+                        IconButton({ vm.step = CreateStep.Time }, Modifier.align(Alignment.CenterStart)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = SpawnTheme.colors.heading) }
+                        Text("Choose Location", style = onest(18.sp, FontWeight.SemiBold), color = SpawnTheme.colors.heading, modifier = Modifier.align(Alignment.Center))
+                    }
                 }
-                Box(Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 8.dp)) {
-                    IconButton({ vm.step = CreateStep.Time }, Modifier.align(Alignment.CenterStart)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = SpawnTheme.colors.heading) }
-                    Text("Choose Location", style = onest(18.sp, FontWeight.SemiBold), color = SpawnTheme.colors.heading, modifier = Modifier.align(Alignment.Center))
-                }
-                SpawnTextField(query, { query = it }, "Where at?", Modifier.padding(horizontal = 16.dp))
-                LazyColumn(Modifier.weight(1f).padding(horizontal = 16.dp)) {
+                SpawnTextField(
+                    query, { query = it }, "Where at?",
+                    Modifier.padding(horizontal = 16.dp).onFocusChanged { if (it.hasFocus && panelOffset > 0f) scope.launch { settle(-1000f) } },
+                )
+                LazyColumn(Modifier.weight(1f).nestedScroll(listScroll).padding(horizontal = 16.dp)) {
                     item {
                         PlaceRow(Icons.Outlined.NearMe, "Current Location", if (me != null) "Use where you are now" else "Location is off", null) {
                             me?.let { l -> scope.launch { vm.location = PlaceSearch.reverse(context, l.latitude, l.longitude).copy(name = "Current Location").toLocation().copy(name = "Current Location"); vm.step = CreateStep.Confirm } }
@@ -449,7 +599,7 @@ private fun ConfirmStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
     var custom by remember { mutableStateOf("") }
     var inviteOpen by remember { mutableStateOf(false) }
     val timeFmt = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
-    Column(Modifier.fillMaxSize().padding(bottom = bottomPadding).imePadding()) {
+    Column(Modifier.fillMaxSize().padding(bottom = tabBarOrKeyboard(bottomPadding))) {
         StepHeader("Confirm", onBack = { vm.step = CreateStep.Location })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.height(24.dp))
