@@ -14,6 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -43,15 +47,45 @@ import com.danielagapov.spawn.ui.theme.SpawnTheme
 @Composable
 fun AppRoot() {
     val auth by Spawn.auth.collectAsState()
+    val signedInViewModels: SignedInViewModels = viewModel()
+    if (auth !is AuthState.SignedIn) SideEffect { signedInViewModels.clearSession() }
     Box(Modifier.fillMaxSize().background(SpawnTheme.colors.background)) {
         when (val s = auth) {
             AuthState.Loading -> Unit // system splash stays up
             AuthState.SignedOut -> AuthFlow()
             // Google sign-up responses leave user.provider empty, so go by how they signed in, not the provider field.
             is AuthState.Onboarding -> OnboardingFlow(s.status, isOAuthUser = Spawn.isOAuthUser)
-            is AuthState.SignedIn -> MainScaffold(s.user)
+            is AuthState.SignedIn -> key(s.user.id) {
+                val owner = remember(s.user.id) { signedInViewModels.forUser(s.user.id) }
+                CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
+                    MainScaffold(s.user)
+                }
+            }
         }
     }
+}
+
+/** Keep signed-in screen state across recreation, and discard it when the account session ends. */
+internal class SignedInViewModels : ViewModel() {
+    private class Session(val userId: String) : ViewModelStoreOwner {
+        override val viewModelStore = ViewModelStore()
+    }
+
+    private var session: Session? = null
+
+    fun forUser(userId: String): ViewModelStoreOwner {
+        session?.takeIf { it.userId == userId }?.let { return it }
+        clearSession()
+        return Session(userId).also { session = it }
+    }
+
+    fun clearSession() {
+        val previous = session
+        session = null
+        previous?.viewModelStore?.clear()
+    }
+
+    override fun onCleared() = clearSession()
 }
 
 @Composable
