@@ -59,6 +59,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -577,42 +579,93 @@ private fun SocialField(
 // endregion
 
 // region Settings
+private data class SearchableSetting(val label: String, val row: @Composable () -> Unit)
+
 @Composable
 private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -> Unit, onAccount: () -> Unit, onBlocked: () -> Unit) {
     val c = SpawnTheme.colors
     val context = LocalContext.current
     var feedbackOpen by remember { mutableStateOf(false) }
     var confirmLogout by remember { mutableStateOf(false) }
+    var search by rememberSaveable { mutableStateOf("") }
     fun open(url: String) = runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+    fun setting(icon: ImageVector, label: String, external: Boolean = false, onClick: () -> Unit) =
+        SearchableSetting(label) { SettingsRow(icon, label, external = external, onClick = onClick) }
+
+    val groups = listOf(
+        "Account Settings" to listOf(setting(Icons.Outlined.LockReset, "Account", onClick = onAccount)),
+        "Privacy & Safety" to listOf(setting(Icons.Outlined.Block, "Blocked users", onClick = onBlocked)),
+        "Contact Us" to listOf(
+            setting(Icons.Outlined.Feedback, "Send us feedback") { feedbackOpen = true },
+            setting(Icons.Outlined.ChatBubbleOutline, "Contact us") { open("mailto:spawnappmarketing@gmail.com?subject=Spawn%20Android") },
+            setting(Icons.Outlined.StarRate, "Rate Spawn") {
+                open("market://details?id=${context.packageName}").onFailure { open("https://play.google.com/store/apps/details?id=${context.packageName}") }
+            },
+        ),
+        "Socials" to listOf(setting(Icons.Outlined.CameraAlt, "Instagram", external = true) { open("https://instagram.com/spawnapp") }),
+        "Legal" to listOf(setting(Icons.Outlined.Policy, "Privacy Policy", external = true) { open(BuildConfig.PRIVACY_POLICY_URL) }),
+        "Authentication" to listOf(SearchableSetting("Log Out") {
+            ActionRow("Log Out", Icons.AutoMirrored.Filled.Logout, c.text) { confirmLogout = true }
+        }),
+    )
+    val query = search.trim()
+    val matches = groups.mapNotNull { (section, items) ->
+        val visible = if (section.contains(query, ignoreCase = true)) items
+        else items.filter { it.label.contains(query, ignoreCase = true) }
+        if (visible.isEmpty()) null else section to visible
+    }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp)) {
             IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = c.heading) }
             Text("Settings & Preferences", style = onest(20.sp, FontWeight.SemiBold), color = c.heading, modifier = Modifier.align(Alignment.Center))
         }
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, bottom = bottomPadding + 16.dp)) {
-            SettingsSection("Account Settings")
-            SettingsRow(Icons.Outlined.LockReset, "Account", onClick = onAccount)
-            SettingsSection("Privacy & Safety")
-            SettingsRow(Icons.Outlined.Block, "Blocked users", onClick = onBlocked)
-            SettingsSection("Contact Us")
-            SettingsRow(Icons.Outlined.Feedback, "Send us feedback") { feedbackOpen = true }
-            SettingsRow(Icons.Outlined.ChatBubbleOutline, "Contact us") { open("mailto:spawnappmarketing@gmail.com?subject=Spawn%20Android") }
-            SettingsRow(Icons.Outlined.StarRate, "Rate Spawn") {
-                open("market://details?id=${context.packageName}").onFailure { open("https://play.google.com/store/apps/details?id=${context.packageName}") }
+        Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, bottom = bottomPadding + 16.dp)) {
+            SettingsSearch(search, onValueChange = { search = it })
+            if (matches.isEmpty()) {
+                Text("No matching settings", style = onest(14.sp), color = c.textSecondary, modifier = Modifier.padding(top = 24.dp))
             }
-            SettingsSection("Socials")
-            SettingsRow(Icons.Outlined.CameraAlt, "Instagram", external = true) { open("https://instagram.com/spawnapp") }
-            SettingsSection("Legal")
-            SettingsRow(Icons.Outlined.Policy, "Privacy Policy", external = true) { open(BuildConfig.PRIVACY_POLICY_URL) }
-            SettingsSection("Authentication")
-            ActionRow("Log Out", Icons.AutoMirrored.Filled.Logout, c.text) { confirmLogout = true }
-            Spacer(Modifier.height(24.dp))
-            Text("Spawn for Android ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", style = onest(12.sp), color = c.placeholder, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+            matches.forEach { (section, items) ->
+                SettingsSection(section)
+                items.forEach { it.row() }
+            }
+            if (query.isEmpty()) {
+                Spacer(Modifier.height(24.dp))
+                Text("Spawn for Android ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", style = onest(12.sp), color = c.placeholder, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+            }
         }
     }
     if (feedbackOpen) FeedbackDialog(onDismiss = { feedbackOpen = false }) { type, msg -> vm.sendFeedback(type, msg) { feedbackOpen = false } }
     if (confirmLogout) ConfirmDialog("Log out?", "You'll need to sign in again to see your activities.", "Log Out", { confirmLogout = false }) { confirmLogout = false; vm.logOut() }
+}
+
+/** Search field in the Settings wireframe (442:5859). */
+@Composable
+private fun SettingsSearch(value: String, onValueChange: (String) -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        singleLine = true,
+        textStyle = onest(16.sp, FontWeight.Medium).copy(color = Palette.Gray900),
+        cursorBrush = SolidColor(Palette.Indigo500),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Search Settings" },
+        decorationBox = { input ->
+            Row(
+                Modifier.heightIn(min = 48.dp).clip(shape).background(Color.White)
+                    .border(1.dp, Palette.Gray400, shape).padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(Icons.Outlined.Search, null, tint = Palette.Gray400, modifier = Modifier.size(18.dp))
+                Box(Modifier.weight(1f)) {
+                    if (value.isEmpty()) Text("Search Settings", style = onest(16.sp, FontWeight.Medium), color = Palette.Gray400)
+                    input()
+                }
+            }
+        },
+    )
 }
 
 /** Figma "Account Settings" (455:6297): Change Password for email accounts, then Delete Account. */
