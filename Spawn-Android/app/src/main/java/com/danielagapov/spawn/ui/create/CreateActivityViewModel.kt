@@ -55,6 +55,7 @@ class CreateActivityViewModel : ViewModel() {
     var title by mutableStateOf("")
     var duration by mutableStateOf(Duration.Indefinite)
     var customMinutes by mutableStateOf(180)
+    private var hasOpenedTimeStep = false
 
     /** Length in minutes, or null for an activity with no end time. */
     val durationMinutes: Long?
@@ -75,7 +76,6 @@ class CreateActivityViewModel : ViewModel() {
         private set
 
     init {
-        resetTime()
         load()
     }
 
@@ -89,9 +89,10 @@ class CreateActivityViewModel : ViewModel() {
 
     private fun resetTime() {
         // Next quarter hour, like iOS's default picker position.
-        val now = LocalDateTime.now().plusMinutes(15)
-        val rounded = now.withMinute((now.minute / 15) * 15)
-        dayOffset = if (rounded.toLocalDate().isAfter(LocalDate.now())) 1 else 0
+        val now = LocalDateTime.now()
+        val next = now.plusMinutes(15)
+        val rounded = next.withMinute((next.minute / 15) * 15)
+        dayOffset = if (rounded.toLocalDate().isAfter(now.toLocalDate())) 1 else 0
         val h = rounded.hour
         pm = h >= 12
         hour12 = if (h % 12 == 0) 12 else h % 12
@@ -108,12 +109,16 @@ class CreateActivityViewModel : ViewModel() {
         invited = emptySet()
         created = null
         error = null
-        resetTime()
+        hasOpenedTimeStep = false
         load()
     }
 
     /** Pick a type (from the grid or the home quick-create buttons) and go to the time step. */
     fun pickType(t: ActivityTypeDTO?) {
+        if (!hasOpenedTimeStep) {
+            resetTime()
+            hasOpenedTimeStep = true
+        }
         selectedType = t
         if (title.isBlank() && t != null) title = ""
         val ids = t?.associatedFriends?.map { it.id }.orEmpty()
