@@ -179,7 +179,7 @@ private fun ProfileMain(
             Stat(Icons.Default.EditCalendar, vm.stats?.spawnsJoined, "Spawns\njoined")
         }
         Spacer(Modifier.height(28.dp))
-        InterestsCard(vm.interests, vm.socials, showSocials = true, firstName = "You", modifier = Modifier.padding(horizontal = 32.dp))
+        InterestsCard(vm.interests, vm.socials, showSocials = true, firstName = null, modifier = Modifier.padding(horizontal = 32.dp))
         Spacer(Modifier.height(28.dp))
         ActivityCalendar(
             vm.month, vm.calendar, onMonthChange = vm::changeMonth, onDay = onDay, onOpenFull = onFullCalendar,
