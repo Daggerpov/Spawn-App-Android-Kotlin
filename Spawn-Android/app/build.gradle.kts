@@ -35,8 +35,8 @@ android {
         applicationId = "com.danielagapov.spawn"
         minSdk = 28
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.0.4"
+        versionCode = 8
+        versionName = "1.0.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
