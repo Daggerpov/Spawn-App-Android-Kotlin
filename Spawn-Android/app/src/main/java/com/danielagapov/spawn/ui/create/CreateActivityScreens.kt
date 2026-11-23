@@ -71,6 +71,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -78,6 +79,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.danielagapov.spawn.R
 import com.danielagapov.spawn.core.model.ActivityTypeDTO
 import com.danielagapov.spawn.core.util.Dates
 import com.danielagapov.spawn.core.util.Distance
@@ -203,7 +205,8 @@ private fun TypeStep(vm: CreateActivityViewModel, bottomPadding: Dp, onCardTappe
                         Text(t.icon, fontSize = 30.sp)
                         Spacer(Modifier.height(6.dp))
                         Text(t.title, style = onest(15.sp, FontWeight.SemiBold), color = SpawnTheme.colors.heading, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
-                        Text("${t.associatedFriends.size} people", style = onest(12.sp), color = SpawnTheme.colors.textSecondary)
+                        val count = t.associatedFriends.size
+                        Text(pluralStringResource(R.plurals.activity_people_count, count, count), style = onest(12.sp), color = SpawnTheme.colors.textSecondary)
                     }
                     if (t.isPinned) {
                         Box(Modifier.padding(6.dp).size(20.dp).clip(CircleShape).background(Palette.Red600), contentAlignment = Alignment.Center) {
@@ -598,7 +601,8 @@ private fun ConfirmStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
             ) {
                 Text(vm.selectedType?.icon ?: "⭐️", fontSize = 34.sp)
                 Text(vm.selectedType?.title ?: "Activity", style = onest(15.sp, FontWeight.SemiBold), color = SpawnTheme.colors.heading)
-                Text("${vm.invited.size} people", style = onest(12.sp), color = SpawnTheme.colors.textSecondary)
+                val count = vm.invited.size
+                Text(pluralStringResource(R.plurals.activity_people_count, count, count), style = onest(12.sp), color = SpawnTheme.colors.textSecondary)
             }
             Spacer(Modifier.height(18.dp))
             Text(vm.effectiveTitle, style = onest(26.sp, FontWeight.Bold), color = SpawnTheme.colors.heading, textAlign = TextAlign.Center)

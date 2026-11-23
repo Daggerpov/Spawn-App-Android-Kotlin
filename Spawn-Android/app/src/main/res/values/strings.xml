@@ -20,4 +20,8 @@
     <string name="confirm_activity">Confirm</string>
     <string name="where_at">Where at?</string>
     <string name="location_dummy">Maps will display here</string>
+    <plurals name="activity_people_count">
+        <item quantity="one">%d person</item>
+        <item quantity="other">%d people</item>
+    </plurals>
 </resources>
