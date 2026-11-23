@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -61,6 +63,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -82,6 +85,8 @@ import com.danielagapov.spawn.ui.friends.ConfirmDialog
 import com.danielagapov.spawn.ui.friends.SmallButton
 import com.danielagapov.spawn.ui.friends.shareProfile
 import com.danielagapov.spawn.ui.theme.ActivityPalette
+import com.danielagapov.spawn.ui.theme.Appearance
+import com.danielagapov.spawn.ui.theme.LocalAppearanceSettings
 import com.danielagapov.spawn.ui.theme.Palette
 import com.danielagapov.spawn.ui.theme.SpawnTheme
 import com.danielagapov.spawn.ui.theme.onest
@@ -89,7 +94,7 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
-private enum class ProfilePage { Main, Edit, Settings, Account, ChangePassword, Blocked, Calendar, Day }
+private enum class ProfilePage { Main, Edit, Settings, Account, Appearance, ChangePassword, Blocked, Calendar, Day }
 
 /** Profile tab (Figma "Your Profile", "Edit Profile", "Settings & Preferences"). */
 @Composable
@@ -101,7 +106,7 @@ fun MyProfileTab(user: BaseUserDTO, onOpenActivity: (FullFeedActivityDTO) -> Uni
     LaunchedEffect(vm.error) { vm.error?.let { InAppBanners.error(it); vm.error = null } }
     BackHandler(page != ProfilePage.Main) {
         page = when (page) {
-            ProfilePage.Account, ProfilePage.Blocked -> ProfilePage.Settings
+            ProfilePage.Account, ProfilePage.Appearance, ProfilePage.Blocked -> ProfilePage.Settings
             ProfilePage.ChangePassword -> ProfilePage.Account
             ProfilePage.Day -> dayBack
             else -> ProfilePage.Main
@@ -125,7 +130,9 @@ fun MyProfileTab(user: BaseUserDTO, onOpenActivity: (FullFeedActivityDTO) -> Uni
             ProfilePage.Settings -> SettingsPage(
                 vm, bottomPadding, onBack = { page = ProfilePage.Main },
                 onAccount = { page = ProfilePage.Account }, onBlocked = { vm.loadBlocked(); page = ProfilePage.Blocked },
+                onAppearance = { page = ProfilePage.Appearance },
             )
+            ProfilePage.Appearance -> AppearancePage(bottomPadding, onBack = { page = ProfilePage.Settings })
             ProfilePage.Account -> AccountSettingsPage(vm, bottomPadding, onBack = { page = ProfilePage.Settings }, onChangePassword = { page = ProfilePage.ChangePassword })
             ProfilePage.ChangePassword -> ChangePasswordPage(vm, bottomPadding, onBack = { page = ProfilePage.Account })
             ProfilePage.Blocked -> BlockedUsersPage(vm, bottomPadding, onBack = { page = ProfilePage.Settings })
@@ -582,7 +589,14 @@ private fun SocialField(
 private data class SearchableSetting(val label: String, val row: @Composable () -> Unit)
 
 @Composable
-private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -> Unit, onAccount: () -> Unit, onBlocked: () -> Unit) {
+private fun SettingsPage(
+    vm: MyProfileViewModel,
+    bottomPadding: Dp,
+    onBack: () -> Unit,
+    onAccount: () -> Unit,
+    onBlocked: () -> Unit,
+    onAppearance: () -> Unit,
+) {
     val c = SpawnTheme.colors
     val context = LocalContext.current
     var feedbackOpen by remember { mutableStateOf(false) }
@@ -594,6 +608,7 @@ private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -
 
     val groups = listOf(
         "Account Settings" to listOf(setting(Icons.Outlined.LockReset, "Account", onClick = onAccount)),
+        "Preferences" to listOf(setting(Icons.Outlined.Brightness6, "Appearance", onClick = onAppearance)),
         "Privacy & Safety" to listOf(setting(Icons.Outlined.Block, "Blocked users", onClick = onBlocked)),
         "Contact Us" to listOf(
             setting(Icons.Outlined.Feedback, "Send us feedback") { feedbackOpen = true },
@@ -667,6 +682,33 @@ private fun SettingsSearch(value: String, onValueChange: (String) -> Unit) {
             }
         },
     )
+}
+
+@Composable
+private fun AppearancePage(bottomPadding: Dp, onBack: () -> Unit) {
+    val settings = LocalAppearanceSettings.current
+    val colors = SpawnTheme.colors
+    Column(Modifier.fillMaxSize().statusBarsPadding()) {
+        SubPageHeader("Appearance", onBack)
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+                .padding(start = 24.dp, end = 24.dp, bottom = bottomPadding + 16.dp)
+                .selectableGroup(),
+        ) {
+            for (appearance in Appearance.entries) {
+                val selected = settings.selected == appearance
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                        .selectable(selected, role = Role.RadioButton) { settings.select(appearance) },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(appearance.label, style = onest(16.sp), color = colors.text)
+                    RadioButton(selected = selected, onClick = null)
+                }
+            }
+        }
+    }
 }
 
 /** Figma "Account Settings" (455:6297): Change Password for email accounts, then Delete Account. */

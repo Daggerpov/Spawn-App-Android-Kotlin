@@ -2,6 +2,9 @@ package com.danielagapov.spawn
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.danielagapov.spawn.ui.components.InAppBannerHost
@@ -16,11 +19,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.danielagapov.spawn.core.push.Push
 import com.danielagapov.spawn.core.session.AuthState
 import com.danielagapov.spawn.core.session.Spawn
 import com.danielagapov.spawn.ui.navigation.AppRoot
+import com.danielagapov.spawn.ui.theme.AppearanceSettings
+import com.danielagapov.spawn.ui.theme.LocalAppearanceSettings
 import com.danielagapov.spawn.ui.theme.SpawnTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -49,11 +55,21 @@ class MainActivity : ComponentActivity() {
             maybeAskForNotifications()
         }
         enableEdgeToEdge()
+        val appearance = AppearanceSettings(getSharedPreferences("spawn_prefs", MODE_PRIVATE))
         setContent {
-            SpawnTheme {
-                Box(Modifier.fillMaxSize()) {
-                    AppRoot()
-                    InAppBannerHost(Modifier.align(Alignment.TopCenter))
+            val dark = appearance.selected.isDark(isSystemInDarkTheme())
+            SideEffect {
+                WindowCompat.getInsetsController(window, window.decorView).apply {
+                    isAppearanceLightStatusBars = !dark
+                    isAppearanceLightNavigationBars = !dark
+                }
+            }
+            CompositionLocalProvider(LocalAppearanceSettings provides appearance) {
+                SpawnTheme(darkTheme = dark) {
+                    Box(Modifier.fillMaxSize()) {
+                        AppRoot()
+                        InAppBannerHost(Modifier.align(Alignment.TopCenter))
+                    }
                 }
             }
         }
