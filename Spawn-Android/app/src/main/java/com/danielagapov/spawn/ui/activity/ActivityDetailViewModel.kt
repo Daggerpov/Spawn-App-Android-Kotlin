@@ -145,7 +145,7 @@ class ActivityDetailViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 Spawn.api.deleteActivity(a.id).bodyOrThrow()
-                Spawn.feedChanged()
+                Spawn.activityDeleted(a.id)
                 onDone()
             } catch (e: Exception) { InAppBanners.error(e.friendlyMessage()) }
         }

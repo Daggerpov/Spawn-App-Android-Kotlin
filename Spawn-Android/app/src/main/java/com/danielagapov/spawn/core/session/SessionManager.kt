@@ -9,8 +9,10 @@ import com.danielagapov.spawn.core.network.SpawnApi
 import com.danielagapov.spawn.core.network.TokenStore
 import com.danielagapov.spawn.core.network.bodyOrThrow
 import com.danielagapov.spawn.core.util.ActivityColors
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 sealed interface AuthState {
@@ -40,6 +42,8 @@ object Spawn {
     /** Bumped whenever something the feed shows changes (activity created/joined/deleted). */
     private val _feedVersion = MutableStateFlow(0)
     val feedVersion: StateFlow<Int> = _feedVersion.asStateFlow()
+    private val _deletedActivities = MutableSharedFlow<String>()
+    val deletedActivities = _deletedActivities.asSharedFlow()
 
     val currentUser: BaseUserDTO?
         get() = when (val s = _auth.value) {
@@ -98,6 +102,11 @@ object Spawn {
 
     fun feedChanged() {
         _feedVersion.value = _feedVersion.value + 1
+    }
+
+    suspend fun activityDeleted(id: String) {
+        _deletedActivities.emit(id)
+        feedChanged()
     }
 
     /** A getspawn.com link the app was opened with; MainScaffold opens it once you're signed in. */
