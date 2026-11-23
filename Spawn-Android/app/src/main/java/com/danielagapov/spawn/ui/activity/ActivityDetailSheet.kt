@@ -431,7 +431,7 @@ private fun DetailPage(
         }
     }
     if (editing) {
-        EditActivityDialog(a, onDismiss = { editing = false }) { title, note -> vm.update(title, note) { editing = false } }
+        EditActivityDialog(a, vm, onDismiss = { editing = false })
     }
 }
 
@@ -454,24 +454,6 @@ fun ReportDialog(title: String, onDismiss: () -> Unit, onSubmit: (ReportType, St
             }
         },
         confirmButton = { TextButton({ onSubmit(type, desc.ifBlank { type.name }) }) { Text("Report", color = Palette.Red600) } },
-        dismissButton = { TextButton(onDismiss) { Text("Cancel") } },
-    )
-}
-
-@Composable
-private fun EditActivityDialog(a: FullFeedActivityDTO, onDismiss: () -> Unit, onSave: (String, String) -> Unit) {
-    var title by remember { mutableStateOf(a.title ?: "") }
-    var note by remember { mutableStateOf(a.note ?: "") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Edit activity") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(title, { title = it }, label = { Text("Title") }, singleLine = true)
-                OutlinedTextField(note, { note = it }, label = { Text("Note") })
-            }
-        },
-        confirmButton = { TextButton({ onSave(title, note) }, enabled = title.isNotBlank()) { Text("Save") } },
         dismissButton = { TextButton(onDismiss) { Text("Cancel") } },
     )
 }

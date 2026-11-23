@@ -10,6 +10,7 @@ import com.danielagapov.spawn.core.model.*
 import com.danielagapov.spawn.core.network.bodyOrThrow
 import com.danielagapov.spawn.core.network.friendlyMessage
 import com.danielagapov.spawn.core.session.Spawn
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -151,14 +152,26 @@ class ActivityDetailViewModel : ViewModel() {
         }
     }
 
-    fun update(title: String?, note: String?, onDone: () -> Unit) {
+    var savingEdit by mutableStateOf(false)
+        private set
+
+    fun update(updates: ActivityPartialUpdateDTO, onDone: () -> Unit, onError: (String) -> Unit) {
         val a = activity ?: return
+        if (savingEdit || !isOwner) return
+        savingEdit = true
         viewModelScope.launch {
             try {
-                activity = Spawn.api.updateActivity(a.id, ActivityPartialUpdateDTO(title = title, note = note)).bodyOrThrow()
+                val saved = Spawn.api.updateActivity(a.id, updates).bodyOrThrow()
+                if (activity?.id == a.id) activity = saved
                 Spawn.feedChanged()
                 onDone()
-            } catch (e: Exception) { InAppBanners.error(e.friendlyMessage()) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                onError(e.friendlyMessage())
+            } finally {
+                savingEdit = false
+            }
         }
     }
 }

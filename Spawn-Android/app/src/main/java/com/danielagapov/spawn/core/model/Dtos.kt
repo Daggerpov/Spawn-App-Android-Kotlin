@@ -163,6 +163,7 @@ data class ActivityPartialUpdateDTO(
     val endTime: String? = null,
     val participantLimit: Int? = null,
     val note: String? = null,
+    val location: LocationDTO? = null,
 )
 
 @Serializable
