@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Spawn</string>
+    <string name="notification_channel_name">Friends and activities</string>
     <string name="hello">Hello,</string>
     <string name="spawn_in">Spawn in!</string>
     <string name="activities_header">What are you up to?</string>
