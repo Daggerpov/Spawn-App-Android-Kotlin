@@ -27,6 +27,11 @@ val webClientId: String = localProperties.getProperty("WEB_CLIENT_ID")
     ?: System.getenv("SPAWN_WEB_CLIENT_ID")
     ?: "822760465266-1dunhm4jgrcg17137rfjo2idu5qefchk.apps.googleusercontent.com"
 
+val tiktokProfileUrl = providers.gradleProperty("spawnTikTokProfileUrl").orNull?.trim().orEmpty()
+require(tiktokProfileUrl.isEmpty() || tiktokProfileUrl.matches(Regex("""https://(?:www\.)?tiktok\.com/@[A-Za-z0-9_.]+/?"""))) {
+    "spawnTikTokProfileUrl must be a canonical HTTPS TikTok profile URL."
+}
+
 android {
     namespace = "com.danielagapov.spawn"
     compileSdk = 36
@@ -42,6 +47,7 @@ android {
 
         buildConfigField("String", "WEB_CLIENT_ID", "\"$webClientId\"")
         buildConfigField("String", "SHARE_BASE_URL", "\"https://getspawn.com\"")
+        buildConfigField("String", "TIKTOK_PROFILE_URL", "\"$tiktokProfileUrl\"")
         buildConfigField(
             "String", "PRIVACY_POLICY_URL",
             "\"https://doc-hosting.flycricket.io/spawn-privacy-policy/8f254bc3-3403-4928-8353-f1f787ed6eec/privacy\""

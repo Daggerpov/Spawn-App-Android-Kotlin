@@ -55,10 +55,13 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -69,6 +72,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.danielagapov.spawn.BuildConfig
+import com.danielagapov.spawn.R
 import com.danielagapov.spawn.core.model.*
 import com.danielagapov.spawn.ui.components.Avatar
 import com.danielagapov.spawn.ui.components.EmptyState
@@ -603,6 +607,13 @@ private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -
             }
             SettingsSection("Socials")
             SettingsRow(Icons.Outlined.CameraAlt, "Instagram", external = true) { open("https://instagram.com/spawnapp") }
+            if (BuildConfig.TIKTOK_PROFILE_URL.isNotEmpty()) {
+                SettingsRow(painterResource(R.drawable.tiktok_settings), "TikTok", external = true) {
+                    open(BuildConfig.TIKTOK_PROFILE_URL).onFailure {
+                        InAppBanners.error("Couldn't open TikTok.")
+                    }
+                }
+            }
             SettingsSection("Legal")
             SettingsRow(Icons.Outlined.Policy, "Privacy Policy", external = true) { open(BuildConfig.PRIVACY_POLICY_URL) }
             SettingsSection("Authentication")
@@ -693,7 +704,11 @@ private fun SettingsSection(title: String) {
 }
 
 @Composable
-private fun SettingsRow(icon: ImageVector, label: String, danger: Boolean = false, external: Boolean = false, onClick: () -> Unit) {
+private fun SettingsRow(icon: ImageVector, label: String, danger: Boolean = false, external: Boolean = false, onClick: () -> Unit) =
+    SettingsRow(rememberVectorPainter(icon), label, danger, external, onClick)
+
+@Composable
+private fun SettingsRow(icon: Painter, label: String, danger: Boolean = false, external: Boolean = false, onClick: () -> Unit) {
     val color = if (danger) Palette.Red600 else SpawnTheme.colors.text
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick).padding(vertical = 10.dp),
