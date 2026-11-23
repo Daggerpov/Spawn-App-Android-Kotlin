@@ -13,6 +13,7 @@ import com.danielagapov.spawn.ui.components.LoadingBox
 import java.time.YearMonth
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -577,13 +578,30 @@ private fun SocialField(
 // endregion
 
 // region Settings
+private const val PLAY_STORE_PACKAGE = "com.danielagapov.spawn"
+
 @Composable
 private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -> Unit, onAccount: () -> Unit, onBlocked: () -> Unit) {
     val c = SpawnTheme.colors
     val context = LocalContext.current
     var feedbackOpen by remember { mutableStateOf(false) }
+    var ratingOpen by remember { mutableStateOf(false) }
     var confirmLogout by remember { mutableStateOf(false) }
     fun open(url: String) = runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+    fun openPlayListing() {
+        open("market://details?id=$PLAY_STORE_PACKAGE")
+            .recoverCatching { open("https://play.google.com/store/apps/details?id=$PLAY_STORE_PACKAGE").getOrThrow() }
+            .onFailure { InAppBanners.error("Couldn't open Google Play.") }
+    }
+    val installedFromPlay = remember(context) {
+        val installer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            context.packageManager.getInstallSourceInfo(context.packageName).installingPackageName
+        } else {
+            @Suppress("DEPRECATION")
+            context.packageManager.getInstallerPackageName(context.packageName)
+        }
+        installer == "com.android.vending"
+    }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp)) {
@@ -599,7 +617,7 @@ private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -
             SettingsRow(Icons.Outlined.Feedback, "Send us feedback") { feedbackOpen = true }
             SettingsRow(Icons.Outlined.ChatBubbleOutline, "Contact us") { open("mailto:spawnappmarketing@gmail.com?subject=Spawn%20Android") }
             SettingsRow(Icons.Outlined.StarRate, "Rate Spawn") {
-                open("market://details?id=${context.packageName}").onFailure { open("https://play.google.com/store/apps/details?id=${context.packageName}") }
+                if (installedFromPlay) openPlayListing() else ratingOpen = true
             }
             SettingsSection("Socials")
             SettingsRow(Icons.Outlined.CameraAlt, "Instagram", external = true) { open("https://instagram.com/spawnapp") }
@@ -610,6 +628,19 @@ private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -
             Spacer(Modifier.height(24.dp))
             Text("Spawn for Android ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", style = onest(12.sp), color = c.placeholder, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         }
+    }
+    if (ratingOpen) {
+        AlertDialog(
+            onDismissRequest = { ratingOpen = false },
+            title = { Text("Rate Spawn") },
+            text = { Text("Google Play may require access to Spawn's test track. You can also send feedback directly in Spawn.") },
+            confirmButton = {
+                TextButton({ ratingOpen = false; openPlayListing() }) { Text("Open Google Play") }
+            },
+            dismissButton = {
+                TextButton({ ratingOpen = false; feedbackOpen = true }) { Text("Send feedback") }
+            },
+        )
     }
     if (feedbackOpen) FeedbackDialog(onDismiss = { feedbackOpen = false }) { type, msg -> vm.sendFeedback(type, msg) { feedbackOpen = false } }
     if (confirmLogout) ConfirmDialog("Log out?", "You'll need to sign in again to see your activities.", "Log Out", { confirmLogout = false }) { confirmLogout = false; vm.logOut() }
