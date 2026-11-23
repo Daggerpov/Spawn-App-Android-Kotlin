@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.google.services)
 }
 
 val localProperties = Properties().apply {
@@ -132,6 +133,10 @@ dependencies {
 
     // Secure token storage
     implementation(libs.androidx.security.crypto)
+
+    // Push notifications (Firebase Cloud Messaging; config in app/google-services.json)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     // Sign in with Google
     implementation(libs.androidx.credentials)

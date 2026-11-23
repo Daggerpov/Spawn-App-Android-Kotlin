@@ -11,6 +11,7 @@ import com.danielagapov.spawn.core.model.*
 import com.danielagapov.spawn.core.network.ApiException
 import com.danielagapov.spawn.core.network.bodyOrThrow
 import com.danielagapov.spawn.core.network.friendlyMessage
+import com.danielagapov.spawn.core.push.Push
 import com.danielagapov.spawn.core.session.Spawn
 import com.danielagapov.spawn.core.util.compressPhoto
 import kotlinx.coroutines.Dispatchers
@@ -205,6 +206,11 @@ class MyProfileViewModel : ViewModel() {
         }
     }
 
-    fun logOut() = Spawn.signOutLocally()
+    fun logOut() {
+        viewModelScope.launch {
+            Push.unregister()
+            Spawn.signOutLocally()
+        }
+    }
     // endregion
 }

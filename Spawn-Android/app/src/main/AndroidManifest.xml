@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- The activity is locked to portrait, which would otherwise make Play require a portrait
          screen and hide the app from devices that report no fixed orientation. -->
@@ -43,6 +44,25 @@
                 <data android:scheme="https" android:host="getspawn.com" android:pathPrefix="/profile" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".core.push.SpawnMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Used for pushes that arrive while the app is in the background. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="spawn_default" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/activity_indigo" />
     </application>
 
 </manifest>

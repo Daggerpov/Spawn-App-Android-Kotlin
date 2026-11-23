@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "178085790712",
+    "project_id": "spawn-e806a",
+    "storage_bucket": "spawn-e806a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:178085790712:android:916018ecec21d31a570c0d",
+        "android_client_info": {
+          "package_name": "com.danielagapov.spawn"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFnQy2xTDTSZ-b9kWad9z_KLHpE5J5eBE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:178085790712:android:9846c120eadb5442570c0d",
+        "android_client_info": {
+          "package_name": "com.danielagapov.spawn.minified"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFnQy2xTDTSZ-b9kWad9z_KLHpE5J5eBE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

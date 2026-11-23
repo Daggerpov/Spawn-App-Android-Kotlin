@@ -353,7 +353,7 @@ data class FeedbackSubmissionDTO(
 )
 
 @Serializable
-data class DeviceTokenDTO(val token: String, val deviceType: String = "ANDROID", val userId: String? = null)
+data class DeviceTokenDTO(val token: String, val deviceType: String, val userId: String? = null)
 
 @Serializable
 data class ShareCodeDTO(val shareCode: String? = null)

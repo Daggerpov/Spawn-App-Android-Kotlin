@@ -204,6 +204,9 @@ interface SpawnApi {
     // region Notifications
     @POST("notifications/device-tokens")
     suspend fun registerDeviceToken(@Body body: DeviceTokenDTO): Response<Unit>
+
+    @HTTP(method = "DELETE", path = "notifications/device-tokens", hasBody = true)
+    suspend fun unregisterDeviceToken(@Body body: DeviceTokenDTO): Response<Unit>
     // endregion
 
     // region Share links (getspawn.com/activity/{code}, /profile/{code})
