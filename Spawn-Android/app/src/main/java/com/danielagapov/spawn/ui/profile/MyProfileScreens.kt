@@ -603,6 +603,11 @@ private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -
             }
             SettingsSection("Socials")
             SettingsRow(Icons.Outlined.CameraAlt, "Instagram", external = true) { open("https://instagram.com/spawnapp") }
+            SettingsRow(Icons.Outlined.Business, "LinkedIn", external = true) {
+                open("https://www.linkedin.com/company/spawnapp/").onFailure {
+                    InAppBanners.error("Couldn't open Spawn on LinkedIn.")
+                }
+            }
             SettingsSection("Legal")
             SettingsRow(Icons.Outlined.Policy, "Privacy Policy", external = true) { open(BuildConfig.PRIVACY_POLICY_URL) }
             SettingsSection("Authentication")
