@@ -79,6 +79,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.danielagapov.spawn.core.model.ActivityTypeDTO
+import com.danielagapov.spawn.core.model.MinimalFriendDTO
+import com.danielagapov.spawn.core.network.friendlyMessage
 import com.danielagapov.spawn.core.util.Dates
 import com.danielagapov.spawn.core.util.Distance
 import com.danielagapov.spawn.core.util.UserLocation
@@ -90,6 +92,7 @@ import com.danielagapov.spawn.ui.theme.onest
 import com.mapbox.geojson.Point
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
@@ -262,7 +265,25 @@ private fun TypeStep(vm: CreateActivityViewModel, bottomPadding: Dp, onCardTappe
 private fun TypeEditor(existing: ActivityTypeDTO?, vm: CreateActivityViewModel, onDismiss: () -> Unit) {
     var title by remember { mutableStateOf(existing?.title ?: "") }
     var icon by remember { mutableStateOf(existing?.icon ?: "⭐️") }
-    var people by remember { mutableStateOf(existing?.associatedFriends?.map { it.id }?.toSet() ?: vm.friends.map { it.id }.toSet()) }
+    var people by remember { mutableStateOf(emptySet<String>()) }
+    var availableFriends by remember { mutableStateOf<List<MinimalFriendDTO>?>(null) }
+    var loadError by remember { mutableStateOf<String?>(null) }
+    var loadAttempt by remember { mutableIntStateOf(0) }
+    LaunchedEffect(loadAttempt) {
+        loadError = null
+        try {
+            val friends = vm.loadTypeEditorFriends()
+            val savedIds = existing?.associatedFriends?.map { it.id }?.toSet()
+            people = friends.mapNotNull { friend ->
+                friend.id.takeIf { savedIds == null || it in savedIds }
+            }.toSet()
+            availableFriends = friends
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            loadError = e.friendlyMessage()
+        }
+    }
     val emojis = listOf("⭐️", "🍽️", "☕️", "🏀", "🎮", "📚", "🎬", "🍻", "🏃", "🧗", "🎤", "🛍️", "🏖️", "🎲", "🍕", "🚗")
     // Fully expanded: a half-open sheet hides its lower part (the name field) behind the keyboard.
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -280,8 +301,17 @@ private fun TypeEditor(existing: ActivityTypeDTO?, vm: CreateActivityViewModel, 
             Spacer(Modifier.height(16.dp))
             Text("Invite by default (${people.size})", style = onest(14.sp, FontWeight.Medium), color = SpawnTheme.colors.text)
             Spacer(Modifier.height(6.dp))
-            if (vm.friends.isEmpty()) Text("Add friends to invite them by default.", style = onest(14.sp), color = SpawnTheme.colors.textSecondary)
-            vm.friends.forEach { f ->
+            val friends = availableFriends
+            val error = loadError
+            when {
+                error != null -> {
+                    Text(error, style = onest(14.sp), color = Palette.Red600)
+                    TextButton(onClick = { loadAttempt++ }) { Text("Retry") }
+                }
+                friends == null -> Text("Loading friends…", style = onest(14.sp), color = SpawnTheme.colors.textSecondary)
+                friends.isEmpty() -> Text("Add friends to invite them by default.", style = onest(14.sp), color = SpawnTheme.colors.textSecondary)
+            }
+            friends.orEmpty().forEach { f ->
                 Row(Modifier.fillMaxWidth().clickable { people = if (f.id in people) people - f.id else people + f.id }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Avatar(f.profilePicture, f.name ?: f.username, 36.dp)
                     Spacer(Modifier.width(10.dp))
@@ -294,9 +324,11 @@ private fun TypeEditor(existing: ActivityTypeDTO?, vm: CreateActivityViewModel, 
             }
             Spacer(Modifier.height(16.dp))
             PrimaryButton(if (existing == null) "Create Type" else "Save", {
-                if (existing == null) vm.createType(title, icon, people) else vm.updateType(existing, title, icon, people)
+                val selectedFriends = friends.orEmpty().filter { it.id in people }
+                if (existing == null) vm.createType(title, icon, selectedFriends)
+                else vm.updateType(existing, title, icon, selectedFriends)
                 onDismiss()
-            }, enabled = title.isNotBlank())
+            }, enabled = title.isNotBlank() && friends != null)
         }
     }
 }
