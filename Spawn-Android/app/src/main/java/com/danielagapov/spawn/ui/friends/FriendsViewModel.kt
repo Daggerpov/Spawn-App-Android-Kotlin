@@ -12,6 +12,7 @@ import com.danielagapov.spawn.core.network.friendlyMessage
 import com.danielagapov.spawn.core.session.Spawn
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -38,26 +39,45 @@ class FriendsViewModel : ViewModel() {
     var toast by mutableStateOf<String?>(null)
 
     private var searchJob: Job? = null
+    private var requestLoadVersion = 0
     private val uid get() = Spawn.userId
 
     init { load() }
 
     fun load() {
-        if (uid.isEmpty()) return
+        val userId = uid.ifEmpty { return }
+        val requestVersion = ++requestLoadVersion
         viewModelScope.launch {
             loading = friends.isEmpty()
-            val f = async { runCatching { Spawn.api.friends(uid).bodyOrThrow() } }
-            val i = async { runCatching { Spawn.api.incomingFriendRequests(uid).bodyOrThrow() } }
-            val s = async { runCatching { Spawn.api.sentFriendRequests(uid).bodyOrThrow() } }
-            val r = async { runCatching { Spawn.api.recentlySpawnedWith(uid).bodyOrThrow() } }
-            val rec = async { runCatching { Spawn.api.recommendedFriends(uid).bodyOrThrow() } }
+            val f = async { runCatching { Spawn.api.friends(userId).bodyOrThrow() } }
+            val i = async { runCatching { Spawn.api.incomingFriendRequests(userId).bodyOrThrow() } }
+            val s = async { runCatching { Spawn.api.sentFriendRequests(userId).bodyOrThrow() } }
+            val r = async { runCatching { Spawn.api.recentlySpawnedWith(userId).bodyOrThrow() } }
+            val rec = async { runCatching { Spawn.api.recommendedFriends(userId).bodyOrThrow() } }
             f.await().onSuccess { friends = it.distinctBy { u -> u.id }.sortedBy { u -> (u.name ?: u.username ?: "").lowercase() } }
                 .onFailure { error = it.friendlyMessage() }
-            i.await().onSuccess { incoming = it }
-            s.await().onSuccess { sent = it }
+            val incomingResult = i.await()
+            val sentResult = s.await()
+            if (requestVersion == requestLoadVersion && userId == uid) {
+                incomingResult.onSuccess { incoming = it }
+                sentResult.onSuccess { sent = it }
+            }
             r.await().onSuccess { recent = it }
             rec.await().onSuccess { recommended = it }
             loading = false
+        }
+    }
+
+    suspend fun refreshRequestLists() = coroutineScope {
+        val userId = uid
+        val requestVersion = ++requestLoadVersion
+        val incomingRequest = async { Spawn.api.incomingFriendRequests(userId).bodyOrThrow() }
+        val sentRequest = async { Spawn.api.sentFriendRequests(userId).bodyOrThrow() }
+        val latestIncoming = incomingRequest.await()
+        val latestSent = sentRequest.await()
+        if (requestVersion == requestLoadVersion && userId == uid) {
+            incoming = latestIncoming
+            sent = latestSent
         }
     }
 
