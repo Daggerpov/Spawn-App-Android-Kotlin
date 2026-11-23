@@ -206,6 +206,15 @@ interface SpawnApi {
     // endregion
 
     // region Notifications
+    @GET("notifications/preferences/{userId}")
+    suspend fun notificationPreferences(@Path("userId") userId: String): Response<NotificationPreferencesDTO>
+
+    @POST("notifications/preferences/{userId}")
+    suspend fun updateNotificationPreferences(
+        @Path("userId") userId: String,
+        @Body body: NotificationPreferencesDTO,
+    ): Response<NotificationPreferencesDTO>
+
     @POST("notifications/device-tokens")
     suspend fun registerDeviceToken(@Body body: DeviceTokenDTO): Response<Unit>
 

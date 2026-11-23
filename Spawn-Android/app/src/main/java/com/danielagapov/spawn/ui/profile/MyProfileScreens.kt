@@ -94,7 +94,7 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
-private enum class ProfilePage { Main, Edit, Settings, Account, Appearance, ChangePassword, Blocked, Calendar, Day }
+private enum class ProfilePage { Main, Edit, Settings, Account, Appearance, PushNotifications, ChangePassword, Blocked, Calendar, Day }
 
 /** Profile tab (Figma "Your Profile", "Edit Profile", "Settings & Preferences"). */
 @Composable
@@ -106,7 +106,7 @@ fun MyProfileTab(user: BaseUserDTO, onOpenActivity: (FullFeedActivityDTO) -> Uni
     LaunchedEffect(vm.error) { vm.error?.let { InAppBanners.error(it); vm.error = null } }
     BackHandler(page != ProfilePage.Main) {
         page = when (page) {
-            ProfilePage.Account, ProfilePage.Appearance, ProfilePage.Blocked -> ProfilePage.Settings
+            ProfilePage.Account, ProfilePage.Appearance, ProfilePage.PushNotifications, ProfilePage.Blocked -> ProfilePage.Settings
             ProfilePage.ChangePassword -> ProfilePage.Account
             ProfilePage.Day -> dayBack
             else -> ProfilePage.Main
@@ -131,8 +131,10 @@ fun MyProfileTab(user: BaseUserDTO, onOpenActivity: (FullFeedActivityDTO) -> Uni
                 vm, bottomPadding, onBack = { page = ProfilePage.Main },
                 onAccount = { page = ProfilePage.Account }, onBlocked = { vm.loadBlocked(); page = ProfilePage.Blocked },
                 onAppearance = { page = ProfilePage.Appearance },
+                onPushNotifications = { page = ProfilePage.PushNotifications },
             )
             ProfilePage.Appearance -> AppearancePage(bottomPadding, onBack = { page = ProfilePage.Settings })
+            ProfilePage.PushNotifications -> PushNotificationsPage(user.id, vm, bottomPadding) { page = ProfilePage.Settings }
             ProfilePage.Account -> AccountSettingsPage(vm, bottomPadding, onBack = { page = ProfilePage.Settings }, onChangePassword = { page = ProfilePage.ChangePassword })
             ProfilePage.ChangePassword -> ChangePasswordPage(vm, bottomPadding, onBack = { page = ProfilePage.Account })
             ProfilePage.Blocked -> BlockedUsersPage(vm, bottomPadding, onBack = { page = ProfilePage.Settings })
@@ -596,6 +598,7 @@ private fun SettingsPage(
     onAccount: () -> Unit,
     onBlocked: () -> Unit,
     onAppearance: () -> Unit,
+    onPushNotifications: () -> Unit,
 ) {
     val c = SpawnTheme.colors
     val context = LocalContext.current
@@ -609,6 +612,7 @@ private fun SettingsPage(
     val groups = listOf(
         "Account Settings" to listOf(setting(Icons.Outlined.LockReset, "Account", onClick = onAccount)),
         "Preferences" to listOf(setting(Icons.Outlined.Brightness6, "Appearance", onClick = onAppearance)),
+        "Notifications" to listOf(setting(Icons.Outlined.Notifications, "Push Notifications", onClick = onPushNotifications)),
         "Privacy & Safety" to listOf(setting(Icons.Outlined.Block, "Blocked users", onClick = onBlocked)),
         "Contact Us" to listOf(
             setting(Icons.Outlined.Feedback, "Send us feedback") { feedbackOpen = true },

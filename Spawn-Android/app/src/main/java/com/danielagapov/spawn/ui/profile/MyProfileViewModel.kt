@@ -15,6 +15,7 @@ import com.danielagapov.spawn.core.push.Push
 import com.danielagapov.spawn.core.session.Spawn
 import com.danielagapov.spawn.core.util.compressPhoto
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.collect
@@ -40,6 +41,43 @@ class MyProfileViewModel : ViewModel() {
     private val me get() = Spawn.userId
     // Exclude a deleted ID even if a calendar request started before deletion completes afterward.
     private val deletedActivityIds = mutableSetOf<String>()
+
+    var notificationPreferences by mutableStateOf<NotificationPreferencesDTO?>(null)
+        private set
+    var notificationPreferencesBusy by mutableStateOf(false)
+        private set
+    var notificationPreferencesError by mutableStateOf<String?>(null)
+        private set
+
+    fun loadNotificationPreferences() {
+        requestNotificationPreferences { userId -> Spawn.api.notificationPreferences(userId).bodyOrThrow() }
+    }
+
+    fun saveNotificationPreferences(preferences: NotificationPreferencesDTO) {
+        if (notificationPreferences?.userId != me || preferences.userId != me) return
+        requestNotificationPreferences { userId ->
+            Spawn.api.updateNotificationPreferences(userId, preferences).bodyOrThrow()
+        }
+    }
+
+    private fun requestNotificationPreferences(request: suspend (String) -> NotificationPreferencesDTO) {
+        val userId = me
+        if (userId.isEmpty() || notificationPreferencesBusy) return
+        notificationPreferencesBusy = true
+        notificationPreferencesError = null
+        viewModelScope.launch {
+            try {
+                val result = request(userId)
+                if (me == userId && result.userId == userId) notificationPreferences = result
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (me == userId) notificationPreferencesError = e.friendlyMessage()
+            } finally {
+                notificationPreferencesBusy = false
+            }
+        }
+    }
 
     init {
         viewModelScope.launch {
