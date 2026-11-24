@@ -58,6 +58,13 @@ import com.mapbox.maps.viewannotation.viewAnnotationOptions
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.ln
+import kotlin.math.roundToInt
+import kotlin.math.tan
+import kotlinx.coroutines.launch
 
 /** Time filters from the Figma "Open Filters" frame, same rules as iOS MapView.updateFilteredActivities. */
 enum class TimeFilter(val label: String) {
@@ -81,6 +88,45 @@ enum class TimeFilter(val label: String) {
 
 private val UBC = Point.fromLngLat(-123.2460, 49.2606)
 
+/** Pins closer than one pin width (44dp) on screen would overlap, so they merge into one count pin. */
+private const val CLUSTER_RADIUS_DP = 44.0
+
+/** From this zoom in, pins never merge, so tapping a cluster always splits it, even for activities at one spot. */
+private const val MAX_CLUSTER_ZOOM = 17.0
+
+/** One marker on the map: a single activity, or a cluster of activities that would overlap at the current zoom. */
+private class MapPin(val members: List<FullFeedActivityDTO>) {
+    val point: Point = Point.fromLngLat(
+        members.mapNotNull { it.location?.longitude }.average(),
+        members.mapNotNull { it.location?.latitude }.average(),
+    )
+}
+
+/**
+ * Figma "Map View - Zoom Out" (333:1352), like iOS's MKClusterAnnotation: greedily groups pins whose Web Mercator
+ * screen positions (512dp world tile at zoom 0, as Mapbox uses) are within [CLUSTER_RADIUS_DP] at [zoom].
+ * The selected activity always keeps its own pin.
+ */
+private fun clusterPins(activities: List<FullFeedActivityDTO>, zoom: Double, selectedId: String?): List<MapPin> {
+    if (zoom >= MAX_CLUSTER_ZOOM) return activities.map { MapPin(listOf(it)) }
+    val world = 512.0 * Math.pow(2.0, zoom)
+    fun screen(a: FullFeedActivityDTO): Pair<Double, Double> {
+        val loc = a.location!!
+        val lat = Math.toRadians(loc.latitude.coerceIn(-85.0, 85.0))
+        return (loc.longitude + 180.0) / 360.0 * world to (1.0 - ln(tan(lat) + 1.0 / cos(lat)) / PI) / 2.0 * world
+    }
+    val positions = activities.associateWith(::screen)
+    val left = activities.filter { it.id != selectedId }.toMutableList()
+    val pins = activities.filter { it.id == selectedId }.map { MapPin(listOf(it)) }.toMutableList()
+    while (left.isNotEmpty()) {
+        val (x, y) = positions.getValue(left.first())
+        val group = left.filter { val (ox, oy) = positions.getValue(it); hypot(ox - x, oy - y) <= CLUSTER_RADIUS_DP }
+        left.removeAll(group)
+        pins += MapPin(group)
+    }
+    return pins
+}
+
 /** Map tab (Figma "Map View"): activity pins with their emoji, 3D / locate controls, compass and time filter. */
 @Composable
 fun MapTab(activities: List<FullFeedActivityDTO>, onOpenActivity: (FullFeedActivityDTO) -> Unit, bottomPadding: Dp, selectedId: String? = null) {
@@ -90,6 +136,7 @@ fun MapTab(activities: List<FullFeedActivityDTO>, onOpenActivity: (FullFeedActiv
     var filtersOpen by remember { mutableStateOf(false) }
     var threeD by rememberSaveable { mutableStateOf(false) }
     val shown = remember(activities, filter) { activities.filter { it.location != null && filter.matches(it) } }
+    val scope = rememberCoroutineScope()
 
     val viewport = rememberMapViewportState {
         val start = me?.let { Point.fromLngLat(it.longitude, it.latitude) }
@@ -124,6 +171,25 @@ fun MapTab(activities: List<FullFeedActivityDTO>, onOpenActivity: (FullFeedActiv
         }
     }
 
+    // Re-cluster in quarter-zoom steps rather than on every camera frame.
+    val zoom by remember { derivedStateOf { ((viewport.cameraState?.zoom ?: 14.0) * 4).roundToInt() / 4.0 } }
+    val pins = remember(shown, zoom, selectedId) { clusterPins(shown, zoom, selectedId) }
+
+    // Tapping a cluster zooms in until its pins split apart, like iOS's showAnnotations(memberAnnotations).
+    fun openCluster(pin: MapPin) {
+        scope.launch {
+            val px = { dp: Dp -> with(density) { dp.toPx() }.toDouble() }
+            val camera = viewport.cameraForCoordinates(
+                pin.members.mapNotNull { a -> a.location?.let { Point.fromLngLat(it.longitude, it.latitude) } },
+                com.mapbox.maps.CameraOptions.Builder().build(),
+                EdgeInsets(px(140.dp), px(72.dp), px(bottomPadding + 96.dp), px(72.dp)),
+                MAX_CLUSTER_ZOOM,
+                null,
+            )
+            viewport.easeTo(camera, MapAnimationOptions.mapAnimationOptions { duration(500) })
+        }
+    }
+
     BackHandler(filtersOpen) { filtersOpen = false }
 
     Box(Modifier.fillMaxSize()) {
@@ -142,20 +208,25 @@ fun MapTab(activities: List<FullFeedActivityDTO>, onOpenActivity: (FullFeedActiv
                     locationPuck = createDefault2DPuck(withBearing = false)
                 }
             }
-            shown.forEach { a ->
-                val loc = a.location ?: return@forEach
-                key(a.id) {
+            pins.forEach { pin ->
+                key(pin.members.joinToString(",") { it.id }) {
                     ViewAnnotation(
                         options = viewAnnotationOptions {
-                            geometry(Point.fromLngLat(loc.longitude, loc.latitude))
+                            geometry(pin.point)
                             annotationAnchor { anchor(ViewAnnotationAnchor.BOTTOM) }
                             allowOverlap(true)
                         },
                     ) {
-                        ActivityPin(
-                            a.icon ?: "⭐️", ActivityPalette.color(Spawn.colors.indexFor(a.id)),
-                            live = ActivityStatus.of(a).isLive, selected = a.id == selectedId,
-                        ) { onOpenActivity(a) }
+                        val a = pin.members.singleOrNull()
+                        if (a != null) {
+                            ActivityPin(
+                                a.icon ?: "⭐️", ActivityPalette.color(Spawn.colors.indexFor(a.id)),
+                                live = ActivityStatus.of(a).isLive, selected = a.id == selectedId,
+                            ) { onOpenActivity(a) }
+                        } else {
+                            // Figma's cluster pin: white with the count in indigo
+                            ActivityPin(pin.members.size.toString(), Color.White, live = false, countColor = Palette.Indigo500) { openCluster(pin) }
+                        }
                     }
                 }
             }
@@ -253,7 +324,14 @@ private fun FilterPill(label: String, selected: Boolean, wide: Boolean, onClick:
 
 /** The Figma map marker: a colored teardrop with the activity's emoji. */
 @Composable
-private fun ActivityPin(emoji: String, color: Color, live: Boolean, selected: Boolean = false, onClick: () -> Unit) {
+private fun ActivityPin(
+    emoji: String,
+    color: Color,
+    live: Boolean,
+    selected: Boolean = false,
+    countColor: Color? = null,
+    onClick: () -> Unit,
+) {
     // The selected pin is drawn larger, like Figma's "Select Event" frame
     val scale = if (selected) 1.3f else 1f
     Box(Modifier.size(44.dp * scale, 58.dp * scale).clickable(remember { MutableInteractionSource() }, null, onClick = onClick)) {
@@ -272,7 +350,11 @@ private fun ActivityPin(emoji: String, color: Color, live: Boolean, selected: Bo
             translate(0f, -2f) { drawPath(path, color) }
             drawCircle(Color.White.copy(alpha = 0.18f), radius = r * 0.78f, center = Offset(r, r - 2f))
         }
-        Text(emoji, fontSize = 20.sp * scale, modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp * scale))
+        if (countColor != null) {
+            Text(emoji, style = onest(20.sp, FontWeight.SemiBold), color = countColor, modifier = Modifier.align(Alignment.TopCenter).padding(top = 7.dp))
+        } else {
+            Text(emoji, fontSize = 20.sp * scale, modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp * scale))
+        }
         if (live) {
             Box(Modifier.align(Alignment.TopEnd).size(12.dp).clip(CircleShape).background(Color.White).padding(2.dp).clip(CircleShape).background(Palette.HappeningNow))
         }
