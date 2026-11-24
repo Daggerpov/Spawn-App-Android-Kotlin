@@ -18,6 +18,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -39,6 +41,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -46,6 +50,7 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -103,6 +108,23 @@ private fun AuthScaffold(
         bottom()
         Spacer(Modifier.height(16.dp))
     }
+}
+
+/**
+ * Keeps a form's Continue button in view above the keyboard (#97). AuthScaffold already shrinks to the space above
+ * the keyboard; this scrolls that space so the button isn't left below the fold on shorter screens.
+ */
+@Composable
+private fun Modifier.keepAboveKeyboard(): Modifier {
+    val requester = remember { BringIntoViewRequester() }
+    val imeBottom = WindowInsets.ime.getBottom(LocalDensity.current)
+    LaunchedEffect(imeBottom) {
+        if (imeBottom > 0) {
+            withFrameNanos { } // let the resized layout land first
+            requester.bringIntoView()
+        }
+    }
+    return bringIntoViewRequester(requester)
 }
 
 @Composable
@@ -269,12 +291,21 @@ fun LoginScreen(vm: AuthViewModel, onBack: () -> Unit) {
     var user by rememberSaveable { mutableStateOf("") }
     var pass by rememberSaveable { mutableStateOf("") }
     val context = LocalContext.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    val canSubmit = user.isNotBlank() && pass.isNotBlank()
     AuthScaffold(onBack, "Welcome Back", "Your plans are waiting — time to spawn.", vm.error) {
-        SpawnTextField(user, { user = it; vm.clearError() }, "Enter your email or username", label = "Email / Username", keyboardType = KeyboardType.Email)
+        SpawnTextField(
+            user, { user = it; vm.clearError() }, "Enter your email or username", label = "Email / Username",
+            keyboardType = KeyboardType.Email, imeAction = ImeAction.Next,
+        )
         Spacer(Modifier.height(16.dp))
-        SpawnTextField(pass, { pass = it; vm.clearError() }, "Enter your password", label = "Password", isPassword = true)
+        SpawnTextField(
+            pass, { pass = it; vm.clearError() }, "Enter your password", label = "Password", isPassword = true,
+            imeAction = ImeAction.Done,
+            onImeAction = { if (canSubmit && !vm.loading) { keyboard?.hide(); vm.login(user, pass) } },
+        )
         Spacer(Modifier.height(24.dp))
-        PrimaryButton("Continue", { vm.login(user, pass) }, enabled = user.isNotBlank() && pass.isNotBlank(), loading = vm.loading)
+        PrimaryButton("Continue", { vm.login(user, pass) }, Modifier.keepAboveKeyboard(), enabled = canSubmit, loading = vm.loading)
         OrDivider()
         GoogleButton("Sign in with Google") { vm.googleSignIn(context, isSignup = false) }
     }
@@ -284,10 +315,15 @@ fun LoginScreen(vm: AuthViewModel, onBack: () -> Unit) {
 fun SignupEmailScreen(vm: AuthViewModel, onBack: () -> Unit, onCodeSent: () -> Unit) {
     var email by rememberSaveable { mutableStateOf("") }
     val context = LocalContext.current
+    val keyboard = LocalSoftwareKeyboardController.current
     AuthScaffold(onBack, "Create Your Account", "Choose how you’d like to set up your account.", vm.error) {
-        SpawnTextField(email, { email = it; vm.clearError() }, "yourname@gmail.com", label = "Email", keyboardType = KeyboardType.Email)
+        SpawnTextField(
+            email, { email = it; vm.clearError() }, "yourname@gmail.com", label = "Email", keyboardType = KeyboardType.Email,
+            imeAction = ImeAction.Done,
+            onImeAction = { if (email.contains("@") && !vm.loading) { keyboard?.hide(); vm.sendCode(email, onCodeSent) } },
+        )
         Spacer(Modifier.height(20.dp))
-        PrimaryButton("Continue", { vm.sendCode(email, onCodeSent) }, enabled = email.contains("@"), loading = vm.loading)
+        PrimaryButton("Continue", { vm.sendCode(email, onCodeSent) }, Modifier.keepAboveKeyboard(), enabled = email.contains("@"), loading = vm.loading)
         OrDivider()
         GoogleButton("Sign in with Google") { vm.googleSignIn(context, isSignup = true) }
     }
@@ -367,6 +403,12 @@ fun AccountDetailsScreen(vm: AuthViewModel, isOAuthUser: Boolean, onBack: () -> 
     var confirm by rememberSaveable { mutableStateOf("") }
     val needsPassword = !isOAuthUser
     val mismatch = needsPassword && confirm.isNotEmpty() && pass != confirm
+    val canSubmit = username.length >= 3 && Phone.isComplete(phone) &&
+        (!needsPassword || (pass.length >= 8 && pass == confirm))
+    val keyboard = LocalSoftwareKeyboardController.current
+    fun submit() = vm.submitAccountDetails(username, if (needsPassword) pass else null, Phone.e164(phone), onDone)
+    // Next walks down the fields; Done on the last one submits, like tapping Continue (#97).
+    val submitFromKeyboard = { if (canSubmit && !vm.loading) { keyboard?.hide(); submit() } }
     BackHandler(onBack = onBack)
     AuthScaffold(
         onBack,
@@ -374,29 +416,30 @@ fun AccountDetailsScreen(vm: AuthViewModel, isOAuthUser: Boolean, onBack: () -> 
         if (isOAuthUser) "Add a username and phone number to complete your account." else "Just a few details to get started.",
         vm.error,
         bottom = {
-            PrimaryButton(
-                "Continue",
-                { vm.submitAccountDetails(username, if (needsPassword) pass else null, Phone.e164(phone), onDone) },
-                enabled = username.length >= 3 && Phone.isComplete(phone) &&
-                    (!needsPassword || (pass.length >= 8 && pass == confirm)),
-                loading = vm.loading,
-            )
+            PrimaryButton("Continue", { submit() }, enabled = canSubmit, loading = vm.loading)
         },
     ) {
-        SpawnTextField(username, { username = it.trim(); vm.clearError() }, "Create a unique nickname", label = "Username")
+        SpawnTextField(username, { username = it.trim(); vm.clearError() }, "Create a unique nickname", label = "Username", imeAction = ImeAction.Next)
         Spacer(Modifier.height(16.dp))
         SpawnTextField(
             phone, { phone = Phone.clean(it); vm.clearError() }, "(604) 555-0123", label = "Phone Number",
             keyboardType = KeyboardType.Phone, visualTransformation = Phone.visualTransformation,
+            imeAction = if (needsPassword) ImeAction.Next else ImeAction.Done,
+            onImeAction = if (needsPassword) null else submitFromKeyboard,
         )
         if (needsPassword) {
             Spacer(Modifier.height(16.dp))
             SpawnTextField(
                 pass, { pass = it; vm.clearError() }, "Enter a strong password", label = "Password", isPassword = true,
                 error = if (pass.isNotEmpty() && pass.length < 8) "At least 8 characters" else null,
+                imeAction = ImeAction.Next,
             )
             Spacer(Modifier.height(16.dp))
-            SpawnTextField(confirm, { confirm = it }, "Re-enter password", label = "Confirm Password", isPassword = true, error = if (mismatch) "Please ensure that your passwords match." else null)
+            SpawnTextField(
+                confirm, { confirm = it }, "Re-enter password", label = "Confirm Password", isPassword = true,
+                error = if (mismatch) "Please ensure that your passwords match." else null,
+                imeAction = ImeAction.Done, onImeAction = submitFromKeyboard,
+            )
         }
     }
 }
