@@ -88,8 +88,8 @@ enum class TimeFilter(val label: String) {
 
 private val UBC = Point.fromLngLat(-123.2460, 49.2606)
 
-/** Pins closer than this on screen merge into one count pin (a pin is 44dp wide). */
-private const val CLUSTER_RADIUS_DP = 40.0
+/** Pins closer than one pin width (44dp) on screen would overlap, so they merge into one count pin. */
+private const val CLUSTER_RADIUS_DP = 44.0
 
 /** From this zoom in, pins never merge, so tapping a cluster always splits it, even for activities at one spot. */
 private const val MAX_CLUSTER_ZOOM = 17.0
