@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Sign-up "Bring your Friends": phone numbers are matched against Spawn accounts, never stored. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <!-- The activity is locked to portrait, which would otherwise make Play require a portrait
          screen and hide the app from devices that report no fixed orientation. -->

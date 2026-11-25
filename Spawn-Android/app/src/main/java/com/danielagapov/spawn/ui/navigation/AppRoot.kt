@@ -78,13 +78,15 @@ private fun OnboardingFlow(status: UserStatus?, isOAuthUser: Boolean) {
     val start = when (status) {
         UserStatus.EMAIL_VERIFIED, null -> "details"
         UserStatus.USERNAME_AND_PHONE_NUMBER -> "name"
-        UserStatus.NAME_AND_PHOTO, UserStatus.CONTACT_IMPORT -> "terms"
+        UserStatus.NAME_AND_PHOTO -> "contacts"
+        UserStatus.CONTACT_IMPORT -> "terms"
         UserStatus.ACTIVE -> "terms"
     }
     NavHost(nav, startDestination = start) {
         // The server can't undo a finished step, so only the first one has a way back (to sign in again later).
         composable("details") { AccountDetailsScreen(vm, isOAuthUser, onBack = { Spawn.cancelOnboarding() }) { nav.navigate("name") { popUpTo("details") { inclusive = true } } } }
-        composable("name") { ProfileSetupScreen(vm) { nav.navigate("terms") { popUpTo("name") { inclusive = true } } } }
+        composable("name") { ProfileSetupScreen(vm) { nav.navigate("contacts") { popUpTo("name") { inclusive = true } } } }
+        composable("contacts") { ContactImportScreen(onDone = { ids -> vm.pendingFriendIds = ids; nav.navigate("terms") { popUpTo("contacts") { inclusive = true } } }) }
         composable("terms") { TermsScreen(vm) }
     }
 }

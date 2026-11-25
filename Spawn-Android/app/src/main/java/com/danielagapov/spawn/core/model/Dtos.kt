@@ -224,6 +224,12 @@ data class FetchSentFriendRequestDTO(
 )
 
 @Serializable
+data class ContactCrossReferenceRequestDTO(val phoneNumbers: List<String>, val requestingUserId: String)
+
+@Serializable
+data class ContactCrossReferenceResponseDTO(val users: List<BaseUserDTO> = emptyList())
+
+@Serializable
 data class CreateFriendRequestDTO(
     val id: String? = null,
     val senderUserId: String,
