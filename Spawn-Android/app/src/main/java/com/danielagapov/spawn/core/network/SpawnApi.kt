@@ -40,6 +40,10 @@ interface SpawnApi {
     @POST("auth/complete-contact-import/{id}")
     suspend fun completeContactImport(@Path("id") userId: String): Response<BaseUserDTO>
 
+    /** Sign-up "Bring your Friends": which of these phone numbers belong to Spawn accounts. Public endpoint. */
+    @POST("users/contacts/cross-reference")
+    suspend fun crossReferenceContacts(@Body body: ContactCrossReferenceRequestDTO): Response<ContactCrossReferenceResponseDTO>
+
     @POST("auth/accept-tos/{id}")
     suspend fun acceptTos(@Path("id") userId: String): Response<BaseUserDTO>
 

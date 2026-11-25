@@ -25,6 +25,7 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.UUID
 
 /**
  * Auth + onboarding state machine (iOS UserAuthViewModel, trimmed to what Android needs):
@@ -43,6 +44,9 @@ class AuthViewModel : ViewModel() {
         private set
 
     private val api get() = Spawn.api
+
+    /** People picked on "Bring your Friends". They get friend requests once the account is active (after the terms). */
+    var pendingFriendIds: List<String> = emptyList()
 
     fun clearError() { error = null }
 
@@ -197,11 +201,16 @@ class AuthViewModel : ViewModel() {
 
     fun acceptTerms() = launch {
         val user = Spawn.currentUser ?: return@launch
-        // Android has no contact import step yet; mark it done so the account becomes ACTIVE.
+        // Accounts that left mid-sign-up before the contacts step existed may not have it marked done yet.
         runCatching { api.completeContactImport(user.id).bodyOrThrow() }
         val updated = api.acceptTos(user.id).bodyOrThrow()
         // Refresh tokens/role now that the account is active.
         val r = runCatching { api.quickSignIn().bodyOrThrow() }.getOrNull()
+        pendingFriendIds.forEach { id ->
+            runCatching { api.sendFriendRequest(CreateFriendRequestDTO(UUID.randomUUID().toString(), user.id, id)).bodyOrThrow() }
+                .onFailure { Log.w("Auth", "friend request from contacts failed", it) }
+        }
+        pendingFriendIds = emptyList()
         Spawn.completeOnboarding(r?.user ?: updated)
     }
 }
