@@ -81,6 +81,8 @@ object Dates {
     fun relativeAndRange(a: FullFeedActivityDTO): String {
         val status = ActivityStatus.of(a)
         val range = activityTime(a)
+        // The date is already part of the range for activities that start tomorrow.
+        if (status is ActivityStatus.InDays && status.d == 1L) return range
         return if (status == ActivityStatus.HappeningNow) "Happening now • $range" else "${status.text} • $range"
     }
 
