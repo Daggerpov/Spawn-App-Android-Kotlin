@@ -471,18 +471,42 @@ fun WheelPicker(items: List<String>, selected: Int, onSelect: (Int) -> Unit, mod
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LocationStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
+    ActivityLocationPicker(
+        bottomPadding = bottomPadding,
+        onBack = { vm.step = CreateStep.Time },
+        showProgress = true,
+        onSelect = { location ->
+            vm.location = location
+            vm.step = CreateStep.Confirm
+        },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ActivityLocationPicker(
+    bottomPadding: Dp,
+    onBack: () -> Unit,
+    initialLocation: com.danielagapov.spawn.core.model.LocationDTO? = null,
+    showProgress: Boolean = false,
+    onSelect: (com.danielagapov.spawn.core.model.LocationDTO) -> Unit,
+) {
     val context = LocalContext.current
     val me by UserLocation.location.collectAsState()
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<Place>>(emptyList()) }
     var pinMode by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val start = me?.let { Point.fromLngLat(it.longitude, it.latitude) } ?: Point.fromLngLat(-123.2460, 49.2606)
+    val start = initialLocation?.let { Point.fromLngLat(it.longitude, it.latitude) }
+        ?: me?.let { Point.fromLngLat(it.longitude, it.latitude) }
+        ?: Point.fromLngLat(-123.2460, 49.2606)
     val viewport = rememberMapViewportState { setCameraOptions { center(start); zoom(14.5) } }
 
     LaunchedEffect(Unit) { UserLocation.refresh(context) }
     LaunchedEffect(me) {
-        me?.let { viewport.setCameraOptions { center(Point.fromLngLat(it.longitude, it.latitude)); zoom(14.5) } }
+        if (initialLocation == null) {
+            me?.let { viewport.setCameraOptions { center(Point.fromLngLat(it.longitude, it.latitude)); zoom(14.5) } }
+        }
     }
     LaunchedEffect(query, me) {
         delay(300)
@@ -548,12 +572,13 @@ private fun LocationStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
                 PrimaryButton("Confirm Location", {
                     val c = viewport.cameraState?.center ?: start
                     scope.launch {
-                        vm.location = PlaceSearch.reverse(context, c.latitude(), c.longitude()).toLocation()
-                        vm.step = CreateStep.Confirm
+                        onSelect(PlaceSearch.reverse(context, c.latitude(), c.longitude()).toLocation())
                     }
                 })
-                Spacer(Modifier.height(10.dp))
-                StepIndicator(1)
+                if (showProgress) {
+                    Spacer(Modifier.height(10.dp))
+                    StepIndicator(1)
+                }
             }
         } else {
             Column(
@@ -573,7 +598,7 @@ private fun LocationStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
                         Box(Modifier.size(40.dp, 5.dp).clip(CircleShape).background(SpawnTheme.colors.divider))
                     }
                     Box(Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 8.dp)) {
-                        IconButton({ vm.step = CreateStep.Time }, Modifier.align(Alignment.CenterStart)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = SpawnTheme.colors.heading) }
+                        IconButton(onBack, Modifier.align(Alignment.CenterStart)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = SpawnTheme.colors.heading) }
                         Text("Choose Location", style = onest(18.sp, FontWeight.SemiBold), color = SpawnTheme.colors.heading, modifier = Modifier.align(Alignment.Center))
                     }
                 }
@@ -581,16 +606,21 @@ private fun LocationStep(vm: CreateActivityViewModel, bottomPadding: Dp) {
                 LazyColumn(Modifier.weight(1f).nestedScroll(listScroll).padding(horizontal = 16.dp)) {
                     item {
                         PlaceRow(Icons.Outlined.NearMe, "Current Location", if (me != null) "Use where you are now" else "Location is off", null) {
-                            me?.let { l -> scope.launch { vm.location = PlaceSearch.reverse(context, l.latitude, l.longitude).copy(name = "Current Location").toLocation().copy(name = "Current Location"); vm.step = CreateStep.Confirm } }
+                            me?.let { l ->
+                                scope.launch {
+                                    onSelect(PlaceSearch.reverse(context, l.latitude, l.longitude)
+                                        .toLocation().copy(name = "Current Location"))
+                                }
+                            }
                         }
                     }
                     items(results) { p ->
                         val dist = Distance.between(me, p.toLocation())?.removeSuffix(" away")
-                        PlaceRow(Icons.Outlined.Place, p.name, p.address, dist) { vm.location = p.toLocation(); vm.step = CreateStep.Confirm }
+                        PlaceRow(Icons.Outlined.Place, p.name, p.address, dist) { onSelect(p.toLocation()) }
                     }
                     item { PlaceRow(Icons.Outlined.PushPin, "Set Location on Map", null, null) { pinMode = true } }
                 }
-                Box(Modifier.padding(12.dp)) { StepIndicator(1) }
+                if (showProgress) Box(Modifier.padding(12.dp)) { StepIndicator(1) }
             }
         }
     }
