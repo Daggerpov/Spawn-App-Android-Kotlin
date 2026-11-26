@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -435,7 +436,9 @@ private fun AddToActivityTypePage(vm: UserProfileViewModel, user: BaseUserDTO, b
                         Text(t.icon, fontSize = 26.sp)
                         Spacer(Modifier.height(6.dp))
                         Text(t.title, style = onest(13.sp, FontWeight.SemiBold), color = if (on) Palette.Indigo600 else c.heading, maxLines = 1)
-                        Text("${t.associatedFriends.size + (if (on && t.associatedFriends.none { it.id == user.id }) 1 else 0) - (if (!on && t.associatedFriends.any { it.id == user.id }) 1 else 0)} people", style = onest(11.sp), color = c.textSecondary)
+                        val savedMember = t.associatedFriends.any { it.id == user.id }
+                        val count = t.associatedFriends.size - (if (savedMember) 1 else 0) + (if (on) 1 else 0)
+                        Text(pluralStringResource(R.plurals.activity_people_count, count, count), style = onest(11.sp), color = c.textSecondary)
                     }
                 }
             }
