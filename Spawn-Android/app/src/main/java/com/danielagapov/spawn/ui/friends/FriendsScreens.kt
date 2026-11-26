@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.danielagapov.spawn.BuildConfig
 import com.danielagapov.spawn.core.model.*
+import com.danielagapov.spawn.core.network.friendlyMessage
 import com.danielagapov.spawn.ui.activity.ReportDialog
 import com.danielagapov.spawn.ui.components.EmptyState
 import com.danielagapov.spawn.ui.components.ErrorBanner
@@ -60,6 +61,7 @@ import com.danielagapov.spawn.ui.components.UserAvatar
 import com.danielagapov.spawn.ui.theme.Palette
 import com.danielagapov.spawn.ui.theme.SpawnTheme
 import com.danielagapov.spawn.ui.theme.onest
+import kotlinx.coroutines.CancellationException
 
 private enum class FriendsPage { Main, Search, Requests }
 
@@ -404,6 +406,22 @@ private fun FriendSearch(vm: FriendsViewModel, onOpenProfile: (BaseUserDTO) -> U
 @Composable
 private fun FriendRequestsPage(vm: FriendsViewModel, onOpenProfile: (BaseUserDTO) -> Unit, bottomPadding: Dp, onBack: () -> Unit) {
     val c = SpawnTheme.colors
+    var refreshAttempt by remember { mutableIntStateOf(0) }
+    var refreshing by remember { mutableStateOf(true) }
+    var refreshError by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(refreshAttempt) {
+        refreshing = true
+        refreshError = null
+        try {
+            vm.refreshRequestLists()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            refreshError = e.friendlyMessage()
+        } finally {
+            refreshing = false
+        }
+    }
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp)) {
             IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = c.heading) }
@@ -414,6 +432,15 @@ private fun FriendRequestsPage(vm: FriendsViewModel, onOpenProfile: (BaseUserDTO
             contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 12.dp, bottom = bottomPadding + 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            val error = refreshError
+            if (refreshing) {
+                item { LoadingBox() }
+                return@LazyColumn
+            }
+            if (error != null) {
+                item { ErrorBanner(error) { refreshAttempt++ } }
+                return@LazyColumn
+            }
             if (vm.incoming.isEmpty() && vm.sent.isEmpty()) {
                 item { EmptyState("📭", "No friend requests", "When someone adds you, you'll see it here.") }
             }
