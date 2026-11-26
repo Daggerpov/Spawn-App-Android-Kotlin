@@ -642,25 +642,26 @@ private fun SettingsPage(vm: MyProfileViewModel, bottomPadding: Dp, onBack: () -
 /** Search field in the Settings wireframe (442:5859). */
 @Composable
 private fun SettingsSearch(value: String, onValueChange: (String) -> Unit) {
+    val c = SpawnTheme.colors
     val shape = RoundedCornerShape(16.dp)
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
         singleLine = true,
-        textStyle = onest(16.sp, FontWeight.Medium).copy(color = Palette.Gray900),
+        textStyle = onest(16.sp, FontWeight.Medium).copy(color = c.text),
         cursorBrush = SolidColor(Palette.Indigo500),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Search Settings" },
         decorationBox = { input ->
             Row(
-                Modifier.heightIn(min = 48.dp).clip(shape).background(Color.White)
-                    .border(1.dp, Palette.Gray400, shape).padding(horizontal = 16.dp, vertical = 12.dp),
+                Modifier.heightIn(min = 48.dp).clip(shape).background(c.background)
+                    .border(1.dp, c.placeholder, shape).padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(Icons.Outlined.Search, null, tint = Palette.Gray400, modifier = Modifier.size(18.dp))
+                Icon(Icons.Outlined.Search, null, tint = c.placeholder, modifier = Modifier.size(18.dp))
                 Box(Modifier.weight(1f)) {
-                    if (value.isEmpty()) Text("Search Settings", style = onest(16.sp, FontWeight.Medium), color = Palette.Gray400)
+                    if (value.isEmpty()) Text("Search Settings", style = onest(16.sp, FontWeight.Medium), color = c.placeholder)
                     input()
                 }
             }
