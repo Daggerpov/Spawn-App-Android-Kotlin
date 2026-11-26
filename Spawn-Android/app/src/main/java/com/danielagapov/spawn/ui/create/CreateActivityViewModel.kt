@@ -205,22 +205,25 @@ class CreateActivityViewModel : ViewModel() {
         batch(emptyList(), listOf(t.id))
     }
 
-    fun createType(title: String, icon: String, friendIds: Set<String>) {
+    suspend fun loadTypeEditorFriends(): List<MinimalFriendDTO> =
+        Spawn.api.minimalFriends(Spawn.userId).bodyOrThrow()
+
+    fun createType(title: String, icon: String, selectedFriends: List<MinimalFriendDTO>) {
         val t = ActivityTypeDTO(
             id = UUID.randomUUID().toString(),
             title = title.trim(),
             icon = icon.ifBlank { "⭐️" },
             orderNum = (types.maxOfOrNull { it.orderNum } ?: -1) + 1,
             ownerUserId = Spawn.userId,
-            associatedFriends = friends.filter { it.id in friendIds },
+            associatedFriends = selectedFriends,
             isPinned = false,
         )
         types = types + t
         batch(listOf(t), emptyList())
     }
 
-    fun updateType(t: ActivityTypeDTO, title: String, icon: String, friendIds: Set<String>) {
-        val u = t.copy(title = title.trim(), icon = icon.ifBlank { t.icon }, associatedFriends = friends.filter { it.id in friendIds })
+    fun updateType(t: ActivityTypeDTO, title: String, icon: String, selectedFriends: List<MinimalFriendDTO>) {
+        val u = t.copy(title = title.trim(), icon = icon.ifBlank { t.icon }, associatedFriends = selectedFriends)
         types = types.map { if (it.id == t.id) u else it }
         batch(listOf(u), emptyList())
     }
