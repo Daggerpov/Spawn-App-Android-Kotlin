@@ -363,6 +363,15 @@ data class FeedbackSubmissionDTO(
 data class DeviceTokenDTO(val token: String, val deviceType: String, val userId: String? = null)
 
 @Serializable
+data class NotificationPreferencesDTO(
+    val userId: String,
+    val friendRequestsEnabled: Boolean,
+    val activityInvitesEnabled: Boolean,
+    val activityUpdatesEnabled: Boolean,
+    val chatMessagesEnabled: Boolean,
+)
+
+@Serializable
 data class ShareCodeDTO(val shareCode: String? = null)
 
 @Serializable
