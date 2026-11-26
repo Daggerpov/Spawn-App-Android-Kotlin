@@ -17,6 +17,7 @@ import com.danielagapov.spawn.core.util.compressPhoto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -37,8 +38,23 @@ class MyProfileViewModel : ViewModel() {
     var toast by mutableStateOf<String?>(null)
 
     private val me get() = Spawn.userId
+    // Exclude a deleted ID even if a calendar request started before deletion completes afterward.
+    private val deletedActivityIds = mutableSetOf<String>()
 
-    init { load() }
+    init {
+        viewModelScope.launch {
+            Spawn.deletedActivities.collect { id ->
+                deletedActivityIds.add(id)
+                calendar = withoutDeletedActivities(calendar)
+                calendarMonths = calendarMonths.map { (month, items) -> month to withoutDeletedActivities(items) }
+                dayActivities = dayActivities.filterNot { it.id in deletedActivityIds }
+            }
+        }
+        load()
+    }
+
+    private fun withoutDeletedActivities(items: List<CalendarActivityDTO>) =
+        items.filterNot { it.activityId in deletedActivityIds }
 
     fun load() {
         if (me.isEmpty()) return
@@ -62,7 +78,7 @@ class MyProfileViewModel : ViewModel() {
         val m = month
         viewModelScope.launch {
             runCatching { Spawn.api.calendar(me, m.monthValue, m.year, java.util.TimeZone.getDefault().id).bodyOrThrow() }
-                .onSuccess { if (m == month) calendar = it }
+                .onSuccess { if (m == month) calendar = withoutDeletedActivities(it) }
         }
     }
 
@@ -75,7 +91,7 @@ class MyProfileViewModel : ViewModel() {
         viewModelScope.launch {
             calendarMonths = (-6L..3L).map { now.plusMonths(it) }.map { m ->
                 async { m to (runCatching { Spawn.api.calendar(me, m.monthValue, m.year, tz).bodyOrThrow() }.getOrNull() ?: emptyList()) }
-            }.awaitAll()
+            }.awaitAll().map { (month, items) -> month to withoutDeletedActivities(items) }
         }
     }
 
@@ -91,7 +107,7 @@ class MyProfileViewModel : ViewModel() {
         viewModelScope.launch {
             dayActivities = items.mapNotNull { it.activityId }.distinct()
                 .map { id -> async { runCatching { Spawn.api.activity(id, me).bodyOrThrow() }.getOrNull() } }
-                .awaitAll().filterNotNull()
+                .awaitAll().filterNotNull().filterNot { it.id in deletedActivityIds }
             dayLoading = false
         }
     }
