@@ -13,6 +13,8 @@
     <string name="enter_activity_title">Enter Activity Title</string>
     <string name="activity_duration">Activity Duration</string>
     <string name="back">back</string>
+    <string name="own_interests_empty">You haven\'t added any interests yet.</string>
+    <string name="other_interests_empty">%1$s hasn\'t added any interests yet.</string>
 
     <!-- Activities -->
     <string name="what_time">What time?</string>

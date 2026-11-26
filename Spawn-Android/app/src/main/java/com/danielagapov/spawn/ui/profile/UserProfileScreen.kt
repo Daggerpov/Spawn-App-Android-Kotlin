@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -308,7 +309,7 @@ private fun ProfilePill(text: String, icon: ImageVector?, bg: Color, fg: Color, 
 
 /** Red-outlined "Interests + Hobbies" card with tilted WhatsApp / Instagram badges (Figma profile). */
 @Composable
-fun InterestsCard(interests: List<String>, socials: UserSocialMediaDTO?, showSocials: Boolean, firstName: String, modifier: Modifier = Modifier) {
+fun InterestsCard(interests: List<String>, socials: UserSocialMediaDTO?, showSocials: Boolean, firstName: String?, modifier: Modifier = Modifier) {
     val c = SpawnTheme.colors
     val context = LocalContext.current
     Box(modifier.fillMaxWidth()) {
@@ -322,7 +323,9 @@ fun InterestsCard(interests: List<String>, socials: UserSocialMediaDTO?, showSoc
                 .padding(start = 20.dp, end = 20.dp, top = 30.dp, bottom = 18.dp),
         ) {
             if (interests.isEmpty()) {
-                Text("$firstName hasn't added any interests yet.", style = onest(13.sp), color = c.placeholder)
+                val message = if (firstName == null) stringResource(R.string.own_interests_empty)
+                else stringResource(R.string.other_interests_empty, firstName)
+                Text(message, style = onest(13.sp), color = c.placeholder)
             } else {
                 @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
