@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,16 +37,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.danielagapov.spawn.core.model.BaseUserDTO
+import com.danielagapov.spawn.core.session.Spawn
+import com.danielagapov.spawn.ui.theme.SpawnTheme
 import com.danielagapov.spawn.ui.theme.onest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 
-enum class BannerKind { Success, Error }
+enum class BannerKind { Success, Error, Notification }
 
-data class BannerMessage(val kind: BannerKind, val text: String, val id: Long = System.nanoTime())
+data class BannerMessage(
+    val kind: BannerKind,
+    val text: String,
+    val title: String? = null,
+    val senderId: String? = null,
+    val id: Long = System.nanoTime(),
+)
 
 /**
  * App-wide top banners from Figma's "In-app Notifications" page (Success 2211:7536, Error 2211:7735),
@@ -60,6 +75,21 @@ object InAppBanners {
     fun success(text: String) { current = BannerMessage(BannerKind.Success, text) }
 
     fun error(text: String) { current = BannerMessage(BannerKind.Error, text) }
+
+    fun notification(title: String?, body: String?, senderId: String?) {
+        val text = body?.takeIf(String::isNotBlank) ?: title?.takeIf(String::isNotBlank) ?: return
+        current = BannerMessage(
+            BannerKind.Notification,
+            text,
+            title = title?.takeIf { it.isNotBlank() && it != text },
+            senderId = senderId,
+        )
+    }
+
+    fun clearNotification() {
+        if (current?.kind == BannerKind.Notification) current = null
+    }
+
 
     fun dismiss(id: Long) { if (current?.id == id) current = null }
 }
@@ -99,6 +129,10 @@ fun InAppBannerHost(modifier: Modifier = Modifier, overlay: Boolean = false, sta
 
 @Composable
 private fun Banner(m: BannerMessage, statusBarInset: Boolean) {
+    if (m.kind == BannerKind.Notification) {
+        NotificationBanner(m, statusBarInset)
+        return
+    }
     val success = m.kind == BannerKind.Success
     val background = if (success) Color(0xFFB0FBDD) else Color(0xFFFFD4DB)
     val stroke = if (success) Color(0xFF71CCAC) else Color(0xFFFF8DA0)
@@ -123,6 +157,48 @@ private fun Banner(m: BannerMessage, statusBarInset: Boolean) {
         Column {
             Text(if (success) "Success!" else "Alert", style = onest(12.sp), color = label)
             Text(m.text, style = onest(16.sp, FontWeight.SemiBold), color = content, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/** Regular notification variant from Figma 2211:7528. */
+@Composable
+private fun NotificationBanner(message: BannerMessage, statusBarInset: Boolean) {
+    val colors = SpawnTheme.colors
+    val sender by produceState<BaseUserDTO?>(null, message.id) {
+        value = null
+        val senderId = message.senderId ?: return@produceState
+        try {
+            value = Spawn.api.getUser(senderId, Spawn.userId).body()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Keep the standard notification icon if the sender is unavailable.
+        }
+    }
+    val shape = RoundedCornerShape(12.dp)
+    Row(
+        Modifier.fillMaxWidth()
+            .then(if (statusBarInset) Modifier.statusBarsPadding() else Modifier)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .shadow(6.dp, shape)
+            .clip(shape)
+            .background(colors.surfaceMuted)
+            .semantics { liveRegion = LiveRegionMode.Polite }
+            .clickable(onClickLabel = "Dismiss notification") { InAppBanners.dismiss(message.id) }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val user = sender
+        if (user == null) {
+            Icon(Icons.Outlined.Notifications, null, tint = colors.textSecondary, modifier = Modifier.size(34.dp))
+        } else {
+            UserAvatar(user, 34.dp)
+        }
+        Spacer(Modifier.width(12.dp))
+        Column {
+            message.title?.let { Text(it, style = onest(11.sp, FontWeight.Medium), color = colors.textSecondary) }
+            Text(message.text, style = onest(16.sp, FontWeight.Bold), color = colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
 }

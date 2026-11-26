@@ -1,23 +1,15 @@
 package com.danielagapov.spawn.core.push
 
-import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.util.Log
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
-import com.danielagapov.spawn.MainActivity
 import com.danielagapov.spawn.R
 import com.danielagapov.spawn.core.model.DeviceTokenDTO
 import com.danielagapov.spawn.core.network.bodyOrThrow
 import com.danielagapov.spawn.core.session.AuthState
 import com.danielagapov.spawn.core.session.Spawn
+import com.danielagapov.spawn.ui.components.InAppBanners
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -87,32 +79,9 @@ object Push {
     /** After any sign-out (including an expired session), drop the token so the old account can't reach us. */
     fun onSignedOut() {
         registered = null
+        InAppBanners.clearNotification()
         FirebaseMessaging.getInstance().deleteToken()
             .addOnFailureListener { Log.w(TAG, "Couldn't delete the FCM token", it) }
     }
 
-    /** Shows a notification. The system does this itself when the app is in the background. */
-    fun show(context: Context, title: String?, body: String?) {
-        if (title.isNullOrBlank() && body.isNullOrBlank()) return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) return
-        val open = PendingIntent.getActivity(
-            context,
-            0,
-            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setColor(ContextCompat.getColor(context, R.color.activity_indigo))
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .setContentIntent(open)
-            .build()
-        NotificationManagerCompat.from(context).notify(System.currentTimeMillis().toInt(), notification)
-    }
 }
